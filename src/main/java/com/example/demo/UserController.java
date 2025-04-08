@@ -54,19 +54,29 @@ public class UserController {
 
 
     @CrossOrigin(origins = "http://localhost:3000")
-    @PostMapping(path="/add") // Map ONLY POST Requests
-    public @ResponseBody String addNewUser (@RequestBody UserDTO body) {
-        // @ResponseBody means the returned String is the response, not a view name
-        // @RequestParam means it is a parameter from the GET or POST request
+    @PostMapping(path="/add")
+    public ResponseEntity<?> addNewUser(@RequestBody UserDTO body) {
+        try {
+            if (userRepository.findByUsername(body.getUsername()).isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("El nombre de usuario ya está en uso");
+            }
 
-        User n = new User();
-        n.setName(body.getName());
-        n.setEmail(body.getEmail());
-        n.setUsername(body.getUsername());
-        n.setPassword(body.getPassword());
-        userRepository.save(n);
-        return "Saved";
+            User n = new User();
+            n.setName(body.getName());
+            n.setEmail(body.getEmail());
+            n.setUsername(body.getUsername());
+            n.setPassword(body.getPassword());
+            userRepository.save(n);
+
+            return ResponseEntity.ok("Usuario registrado correctamente");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al registrar el usuario");
+        }
     }
+
 
     @CrossOrigin(origins = "http://localhost:3000")
     @PutMapping("/api/users/update")
