@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -58,6 +59,36 @@ public class UserController {
         n.setPassword(body.getPassword());
         userRepository.save(n);
         return "Saved";
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @PutMapping("/api/users/update")
+    public ResponseEntity<?> updateUser(@RequestBody UserDTO updatedData) {
+        Optional<User> userOpt = userRepository.findByUsername(updatedData.getUsername());
+
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+        }
+
+        User user = userOpt.get();
+
+        // Solo actualizamos campos si vienen con valores
+        if (updatedData.getName() != null) user.setName(updatedData.getName());
+        if (updatedData.getEmail() != null) user.setEmail(updatedData.getEmail());
+        if (updatedData.getPassword() != null) user.setPassword(updatedData.getPassword());
+
+        userRepository.save(user);
+
+        UserDTO dto = new UserDTO(
+                user.getUsername(),
+                user.getName(),
+                null,
+                user.getEmail(),
+                user.getWins(),
+                user.getLosses()
+        );
+
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping(path="/all")
