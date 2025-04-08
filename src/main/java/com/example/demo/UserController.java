@@ -33,7 +33,9 @@ public class UserController {
                         user.getUsername(),
                         user.getName(),
                         user.getPassword(), // o null si no querés mandarlo
-                        user.getEmail()
+                        user.getEmail(),
+                        user.getWins(),
+                        user.getLosses()
                 );
                 return ResponseEntity.ok(dto);
             }
@@ -63,4 +65,27 @@ public class UserController {
         // This returns a JSON or XML with the users
         return userRepository.findAll();
     }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @GetMapping("/api/users/{username}")
+    public ResponseEntity<?> getUserByUsername(@org.springframework.web.bind.annotation.PathVariable String username) {
+        Optional<User> userOpt = userRepository.findByUsername(username);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            UserDTO dto = new UserDTO(
+                user.getUsername(),
+                user.getName(),
+                null, // no enviamos la contraseña
+                user.getEmail(),
+                user.getWins(),
+                user.getLosses()
+            );
+            return ResponseEntity.ok(dto);
+        }
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+    }
+
+    
 }

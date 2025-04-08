@@ -19,6 +19,10 @@ public class User {
 
     private String password;
 
+    private int wins;
+    
+    private int losses;
+
 
     public Integer getId() {
         return id;
@@ -59,4 +63,25 @@ public class User {
     public void setEmail(String email) {
         this.email = email;
     }
+    
+    public int getWins() { 
+        return wins; 
+    }
+
+    public void setWins(int wins) { 
+        this.wins = wins; 
+    }
+
+    public int getLosses() { 
+        return losses; 
+    }
+
+    public void setLosses(int losses) { 
+        this.losses = losses; 
+    }
+
+    public int getTotalGames() {
+        return wins + losses;
+    }
+    
 }
