@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -78,25 +79,38 @@ public class UserController {
     }
 
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PutMapping("/api/users/update")
-    public ResponseEntity<?> updateUser(@RequestBody UserDTO updatedData) {
-        Optional<User> userOpt = userRepository.findByUsername(updatedData.getUsername());
+    @CrossOrigin(origins = "http://localhost:3000")
+    public ResponseEntity<?> updateUser(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody UserDTO updatedData
+    ) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Falta el token de autenticación");
+        }
 
+        String token = authHeader.replace("Bearer ", "");
+        String usernameFromToken = jwtUtil.validateTokenAndGetUsername(token);
+
+        if (usernameFromToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(usernameFromToken);
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
         }
 
         User user = userOpt.get();
 
-        // Solo actualizamos campos si vienen con valores
+        // Protección extra: ignoramos cualquier username en el body y usamos solo el del token
         if (updatedData.getName() != null) user.setName(updatedData.getName());
         if (updatedData.getEmail() != null) user.setEmail(updatedData.getEmail());
         if (updatedData.getPassword() != null) user.setPassword(updatedData.getPassword());
 
         userRepository.save(user);
 
-        UserDTO dto = new UserDTO(
+        UserDTO response = new UserDTO(
                 user.getUsername(),
                 user.getName(),
                 null,
@@ -105,8 +119,9 @@ public class UserController {
                 user.getLosses()
         );
 
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(response);
     }
+
 
     @GetMapping(path="/all")
     public @ResponseBody Iterable<User> getAllUsers() {
