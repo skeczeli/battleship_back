@@ -125,5 +125,19 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
     }
 
+    @CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api/delete-account")
+public ResponseEntity<String> deleteAccount(@RequestBody DeleteAccountRequest request) {
+    Optional<User> user = userRepository.findByUsername(
+        request.getUsername()
+    );
+
+    if (user.isPresent() && user.get().getPassword().equals(request.getPassword())) {
+        userRepository.delete(user.get());
+        return ResponseEntity.ok("Cuenta eliminada correctamente");
+    } else {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario o contraseña incorrectos");
+    }
+}
     
 }
