@@ -69,10 +69,10 @@ public class Bot {
     }
 
     // Método para realizar un disparo aleatorio
-    public String handleShot() {
+    public String handleShot(List<List<String>> playerBoard) {
         // Espera 2 segundos antes de disparar
         try {
-            Thread.sleep(2000);
+            Thread.sleep(2000); // Simulando retraso
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -82,13 +82,16 @@ public class Bot {
         int row = rand.nextInt(10);
         int col = rand.nextInt(10);
 
-        // Simula un disparo
-        if (board.get(row).get(col) != null && board.get(row).get(col).equals("S")) {
-            board.get(row).set(col, "H"); // Marca el lugar como "hit"
-            return "¡El enemigo fue tocado en (" + row + "," + col + ")";
+        // Simula un disparo en el tablero del jugador
+        String result = "";
+        if (playerBoard.get(row).get(col) != null && playerBoard.get(row).get(col).equals("S")) {
+            playerBoard.get(row).set(col, "H"); // Marca el lugar como "hit"
+            result = "hit";
         } else {
-            board.get(row).set(col, "M"); // Marca el lugar como "miss"
-            return "El disparo del enemigo falló en (" + row + "," + col + ")";
+            playerBoard.get(row).set(col, "M"); // Marca el lugar como "miss"
+            result = "miss";
         }
+
+        return result; // Retornamos solo el resultado del disparo ("hit" o "miss")
     }
 }
