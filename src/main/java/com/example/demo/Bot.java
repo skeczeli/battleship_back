@@ -67,4 +67,28 @@ public class Bot {
     public List<List<String>> getBoard() {
         return board;
     }
+
+    // Método para realizar un disparo aleatorio
+    public String handleShot() {
+        // Espera 2 segundos antes de disparar
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // Genera coordenadas aleatorias
+        Random rand = new Random();
+        int row = rand.nextInt(10);
+        int col = rand.nextInt(10);
+
+        // Simula un disparo
+        if (board.get(row).get(col) != null && board.get(row).get(col).equals("S")) {
+            board.get(row).set(col, "H"); // Marca el lugar como "hit"
+            return "¡El enemigo fue tocado en (" + row + "," + col + ")";
+        } else {
+            board.get(row).set(col, "M"); // Marca el lugar como "miss"
+            return "El disparo del enemigo falló en (" + row + "," + col + ")";
+        }
+    }
 }
