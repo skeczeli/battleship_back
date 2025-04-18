@@ -56,16 +56,16 @@ public class UserDTO {
         return wins; 
     }
 
-    public void setWins(int wins) { 
-        this.wins = wins; 
+    public void addWin(int wins) {
+        this.wins += 1;
     }
 
     public int getLosses() { 
         return losses; 
     }
 
-    public void setLosses(int losses) { 
-        this.losses = losses; 
+    public void addLoss(int losses) {
+        this.losses += 1;
     }
 
     public int getTotalGames() {

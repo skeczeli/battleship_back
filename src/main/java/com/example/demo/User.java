@@ -68,16 +68,16 @@ public class User {
         return wins; 
     }
 
-    public void setWins(int wins) { 
-        this.wins = wins; 
+    public void addWin() {
+        this.wins += 1;
     }
 
     public int getLosses() { 
         return losses; 
     }
 
-    public void setLosses(int losses) { 
-        this.losses = losses; 
+    public void addLoss() {
+        this.losses += 1;
     }
 
     public int getTotalGames() {

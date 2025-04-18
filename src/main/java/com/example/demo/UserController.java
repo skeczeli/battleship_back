@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.Collections;
 import java.util.Optional;
 
 @Controller // This means that this class is a Controller
@@ -107,6 +108,67 @@ public class UserController {
         if (updatedData.getName() != null) user.setName(updatedData.getName());
         if (updatedData.getEmail() != null) user.setEmail(updatedData.getEmail());
         if (updatedData.getPassword() != null) user.setPassword(updatedData.getPassword());
+
+        userRepository.save(user);
+
+        UserDTO response = new UserDTO(
+                user.getUsername(),
+                user.getName(),
+                null,
+                user.getEmail(),
+                user.getWins(),
+                user.getLosses()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api/users/update-score")
+    public ResponseEntity<?> updateUserScore(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody ScoreUpdateDTO scoreUpdate
+    ) {
+        // Check if Authorization header exists
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("error", "Missing authentication token"));
+        }
+
+        // Extract and validate token
+        String token = authHeader.replace("Bearer ", "");
+        String usernameFromToken;
+
+        try {
+            usernameFromToken = jwtUtil.validateTokenAndGetUsername(token);
+            if (usernameFromToken == null) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(Collections.singletonMap("error", "Invalid or expired token"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("error", "Token validation error: " + e.getMessage()));
+        }
+
+        // Find user
+        Optional<User> userOpt = userRepository.findByUsername(usernameFromToken);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", "User not found"));
+        }
+
+        User user = userOpt.get();
+
+        // Update score
+        if (scoreUpdate.isWin()) {
+            user.addWin();
+        } else {
+            user.addLoss();
+        }
 
         userRepository.save(user);
 
