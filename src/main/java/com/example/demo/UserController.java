@@ -28,7 +28,7 @@ public class UserController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    @CrossOrigin(origins = "http://localhost:3000", exposedHeaders = "Authorization")
+    @CrossOrigin(exposedHeaders = "Authorization")
     public ResponseEntity<?> login(@RequestBody UserDTO credentials) {
         Optional<User> userOpt = userRepository.findByUsername(credentials.getUsername());
 
@@ -55,7 +55,6 @@ public class UserController {
     }
 
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping(path="/add")
     public ResponseEntity<?> addNewUser(@RequestBody UserDTO body) {
         try {
@@ -81,7 +80,6 @@ public class UserController {
 
 
     @PutMapping("/api/users/update")
-    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<?> updateUser(
             @RequestHeader("Authorization") String authHeader,
             @RequestBody UserDTO updatedData
@@ -123,7 +121,6 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api/users/update-score")
     public ResponseEntity<?> updateUserScore(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
@@ -191,7 +188,6 @@ public class UserController {
         return userRepository.findAll();
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/api/users/{username}")
     public ResponseEntity<?> getUserByUsername(@org.springframework.web.bind.annotation.PathVariable String username) {
         Optional<User> userOpt = userRepository.findByUsername(username);
@@ -212,7 +208,6 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api/delete-account")
 public ResponseEntity<String> deleteAccount(@RequestBody DeleteAccountRequest request) {
     Optional<User> user = userRepository.findByUsername(
