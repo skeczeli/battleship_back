@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.ranking;
 
 public class PlayerRankingDTO {
     private String username;
