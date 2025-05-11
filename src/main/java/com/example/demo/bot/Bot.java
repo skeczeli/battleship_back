@@ -1,12 +1,14 @@
 package com.example.demo.bot;
 
-import java.util.List;
 import java.util.Random;
+
+import com.example.demo.bot.dto.ShotResultDTO;
+import com.example.demo.game.GameState;
 
 /**
  * Servicio que maneja la lógica del bot para el juego de hundir la flota.
  */
-public class BotService {
+public class Bot {
     
     private static final int BOARD_SIZE = 10;
     private static final Random random = new Random();
@@ -104,91 +106,47 @@ public class BotService {
             board[row][col] = shipId;
         }
     }
-    
-    /**
-     * Genera una jugada (disparo) aleatoria que no se haya realizado antes.
-     * 
-     * @param shotsMade Lista de disparos ya realizados
-     * @return Coordenadas [fila, columna] del nuevo disparo
-     */
-    public int[] makeRandomShot(List<int[]> shotsMade) {
-        // Generar disparos aleatorios hasta encontrar uno que no se haya realizado antes
-        while (true) {
-            int row = random.nextInt(BOARD_SIZE);
-            int col = random.nextInt(BOARD_SIZE);
+
+
+    public ShotResultDTO processBotShot(GameState gameState) {
+        // Encontrar una celda donde el bot no haya disparado
+        int row, col;
+        do {
+            row = (int) (Math.random() * 10);
+            col = (int) (Math.random() * 10);
+        } while (gameState.getBotShots()[row][col]);
+        
+        // Marcar la celda como disparada
+        gameState.getBotShots()[row][col] = true;
+        
+        // Determinar resultado
+        String result = "miss";
+        if (gameState.getPlayerBoard()[row][col] != null) {
+            Integer shipId = gameState.getPlayerBoard()[row][col];
+            result = "hit";
             
-            boolean alreadyShot = false;
-            for (int[] shot : shotsMade) {
-                if (shot[0] == row && shot[1] == col) {
-                    alreadyShot = true;
-                    break;
+            // Verificar si el barco está hundido
+            boolean allHit = true;
+            for (int i = 0; i < 10; i++) {
+                for (int j = 0; j < 10; j++) {
+                    if (gameState.getPlayerBoard()[i][j] != null && 
+                        gameState.getPlayerBoard()[i][j].equals(shipId) && 
+                        !gameState.getBotShots()[i][j]) {
+                        allHit = false;
+                        break;
+                    }
                 }
             }
             
-            if (!alreadyShot) {
-                return new int[]{row, col};
-            }
-        }
-    }
-    
-    /**
-     * Maneja un turno completo del bot, generando un disparo aleatorio.
-     * 
-     * @param playerBoard Tablero del jugador para determinar resultado
-     * @param shotsMade Lista de disparos ya realizados
-     * @return Mapa con la información del disparo (coordenadas y resultado)
-     */
-    public BotShot makeBotTurn(Integer[][] playerBoard, List<int[]> shotsMade) {
-        // Generar disparo aleatorio
-        int[] shotCoords = makeRandomShot(shotsMade);
-        int row = shotCoords[0];
-        int col = shotCoords[1];
-        
-        // Añadir a la lista de disparos realizados
-        shotsMade.add(shotCoords);
-        
-        // Determinar resultado del disparo
-        String result = "miss";
-        if (playerBoard[row][col] != null) {
-            result = "hit";
-            
-            // Comprobar si el barco ha sido hundido
-            boolean shipSunk = isShipSunk(playerBoard, playerBoard[row][col], shotsMade);
-            if (shipSunk) {
+            if (allHit) {
                 result = "sunk";
             }
         }
-        
-        return new BotShot(row, col, result);
+        ShotResultDTO shotResult = new ShotResultDTO(row, col, result);
+        return shotResult;
     }
+
     
-    /**
-     * Verifica si un barco ha sido completamente hundido.
-     */
-    private boolean isShipSunk(Integer[][] board, Integer shipId, List<int[]> shots) {
-        // Contar celdas del barco
-        int shipCells = 0;
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            for (int j = 0; j < BOARD_SIZE; j++) {
-                if (board[i][j] != null && board[i][j].equals(shipId)) {
-                    shipCells++;
-                }
-            }
-        }
-        
-        // Contar disparos acertados en el barco
-        int hitCells = 0;
-        for (int[] shot : shots) {
-            int r = shot[0];
-            int c = shot[1];
-            if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE &&
-                    board[r][c] != null && board[r][c].equals(shipId)) {
-                hitCells++;
-            }
-        }
-        
-        return hitCells >= shipCells;
-    }
     
     /**
      * Clase interna para representar el resultado de un disparo.

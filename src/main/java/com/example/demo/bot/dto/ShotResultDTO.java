@@ -1,7 +1,7 @@
 package com.example.demo.bot.dto;
 
 /**
- * DTO para transferir el resultado de un disparo.
+ * DTO para transferir información sobre un disparo.
  */
 public class ShotResultDTO {
     private int row;
@@ -15,7 +15,6 @@ public class ShotResultDTO {
     public ShotResultDTO(int row, int col, String result) {
         this.row = row;
         this.col = col;
-        this.result = result;
     }
     
     public int getRow() {
@@ -33,11 +32,11 @@ public class ShotResultDTO {
     public void setCol(int col) {
         this.col = col;
     }
-    
+
     public String getResult() {
         return result;
     }
-    
+
     public void setResult(String result) {
         this.result = result;
     }

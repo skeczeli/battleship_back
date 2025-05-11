@@ -1,8 +1,8 @@
 package com.example.demo;
 
 import com.example.demo.bot.dto.ShotDTO;
-import com.example.demo.bot.dto.ShotResultDTO;
-import com.example.demo.bot.BotService;
+//import com.example.demo.bot.dto.ShotResultDTO;
+//import com.example.demo.bot.BotService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,28 +15,18 @@ import java.util.UUID;
  * Servicio para gestionar el estado del juego y coordinar la lógica.
  */
 @Service
-public class GameService {
+public class GameServiceMultiplayer {
+    /*
     
-    private final BotService botService;
     
     // Mapas para almacenar el estado del juego por sesión
     private final Map<String, GameState> gameStates = new HashMap<>();
     
-    @Autowired
-    public GameService(BotService botService) {
-        this.botService = botService;
-    }
-    
-    /**
-     * Inicia un nuevo juego contra el bot.
-     * 
-     * @param playerBoard Tablero del jugador
-     * @return Identificador de sesión y tablero del bot
-     */
-    public Map<String, Object> startGame(Integer[][] playerBoard) {
+
+    public String startGame(Integer[][] playerBoard) {
         // Generar ID único para la sesión
         String sessionId = UUID.randomUUID().toString();
-        
+    
         // Generar tablero para el bot
         Integer[][] botBoard = botService.generateRandomBoard();
         
@@ -49,12 +39,8 @@ public class GameService {
         // Guardar estado
         gameStates.put(sessionId, gameState);
         
-        // Preparar respuesta
-        Map<String, Object> response = new HashMap<>();
-        response.put("sessionId", sessionId);
-        response.put("botBoard", hideShips(botBoard)); // No mostramos los barcos del bot
-        
-        return response;
+        // Devolver directamente el sessionId
+        return sessionId;
     }
     
     /**
@@ -63,11 +49,11 @@ public class GameService {
      * @param sessionId ID de la sesión
      * @param shotDTO Información del disparo
      * @return Resultado del disparo y posible disparo del bot
-     */
+     *
     public Map<String, Object> processPlayerShot(String sessionId, ShotDTO shotDTO) {
         GameState gameState = gameStates.get(sessionId);
-        if (gameState == null || !"player".equals(gameState.getCurrentTurn())) {
-            throw new IllegalStateException("No es tu turno o la sesión no existe");
+        if (gameState == null) {
+            throw new IllegalStateException("La sesión no existe");
         }
         
         // Procesar disparo en el tablero del bot
@@ -111,7 +97,7 @@ public class GameService {
         
         // Cambiar turno si el juego no ha terminado
         if (!gameOver) {
-            gameState.setCurrentTurn("bot");
+            gameState.setCurrentTurn("bot"); //aca sofia en multiplayer retorna
         }
         
         // Preparar resultado
@@ -140,9 +126,7 @@ public class GameService {
         return response;
     }
     
-    /**
-     * Procesa un disparo automático del bot.
-     */
+
     private ShotResultDTO processBotShot(GameState gameState) {
         // Encontrar una celda donde el bot no haya disparado
         int row, col;
@@ -181,9 +165,7 @@ public class GameService {
         return new ShotResultDTO(row, col, result);
     }
     
-    /**
-     * Verifica si hay victoria (todos los barcos hundidos).
-     */
+
     private boolean checkForVictory(Integer[][] board, boolean[][] shots) {
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
@@ -195,65 +177,5 @@ public class GameService {
         }
         return true;
     }
-    
-    /**
-     * Oculta los barcos del tablero para enviar al cliente.
-     */
-    private Integer[][] hideShips(Integer[][] board) {
-        Integer[][] hiddenBoard = new Integer[10][10];
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                hiddenBoard[i][j] = null; // Celdas vacías
-            }
-        }
-        return hiddenBoard;
-    }
-    
-    /**
-     * Clase interna para gestionar el estado del juego.
-     */
-    private static class GameState {
-        private Integer[][] playerBoard;
-        private Integer[][] botBoard;
-        private boolean[][] playerShots;
-        private boolean[][] botShots;
-        private String currentTurn;
-        
-        public GameState() {
-            playerShots = new boolean[10][10];
-            botShots = new boolean[10][10];
-        }
-        
-        public Integer[][] getPlayerBoard() {
-            return playerBoard;
-        }
-        
-        public void setPlayerBoard(Integer[][] playerBoard) {
-            this.playerBoard = playerBoard;
-        }
-        
-        public Integer[][] getBotBoard() {
-            return botBoard;
-        }
-        
-        public void setBotBoard(Integer[][] botBoard) {
-            this.botBoard = botBoard;
-        }
-        
-        public boolean[][] getPlayerShots() {
-            return playerShots;
-        }
-        
-        public boolean[][] getBotShots() {
-            return botShots;
-        }
-        
-        public String getCurrentTurn() {
-            return currentTurn;
-        }
-        
-        public void setCurrentTurn(String currentTurn) {
-            this.currentTurn = currentTurn;
-        }
-    }
+    */
 }

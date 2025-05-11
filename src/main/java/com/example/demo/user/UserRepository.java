@@ -1,8 +1,8 @@
-package com.example.demo;
+package com.example.demo.user;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.example.demo.User;
+import com.example.demo.user.User;
 
 import java.util.Optional;
 

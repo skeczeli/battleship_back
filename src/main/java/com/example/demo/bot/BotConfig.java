@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class BotConfig {
     
     @Bean
-    public BotService botService() {
-        return new BotService();
+    public Bot botService() {
+        return new Bot();
     }
 }
