@@ -1,7 +1,6 @@
 // GameWebSocketController.java
-package com.example.demo.game;
+package com.example.demo.bot;
 
-import com.example.demo.bot.GameServiceBot;
 import com.example.demo.bot.dto.ShotDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -15,12 +14,12 @@ import java.util.Map;
 @Controller
 public class WebSocketController {
 
-    private final GameServiceBot gameService;
+    private final GameServiceBot gameServiceBot;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     public WebSocketController(GameServiceBot gameService, SimpMessagingTemplate messagingTemplate) {
-        this.gameService = gameService;
+        this.gameServiceBot = gameService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -32,30 +31,43 @@ public class WebSocketController {
             String playerId = (String) shotData.get("playerId");
             
             if (row == null || col == null) {
-                throw new IllegalArgumentException("Row and col are required");
+                throw new IllegalArgumentException("Row and col are required"); //para mi innecesario
             }
     
             ShotDTO shot = new ShotDTO(row, col);
-            
+            Map<String, Object> result = new HashMap<>();
+
             // Procesar el disparo del jugador
-            Map<String, Object> result = gameService.processPlayerShot(sessionId, shot);
+            Map<String, Object> shotResult = gameServiceBot.processPlayerShot(sessionId, shot);
             
-            // Añadir información adicional que necesita el frontend
+            // Añadir información que necesita el frontend
             result.put("type", "SHOT_RESULT");
             result.put("playerId", playerId);
             result.put("row", row);
             result.put("col", col);
+            result.put("hit", shotResult.get("playerShotResult"));
+            result.put("rowBot", shotResult.get("botShotRow"));
+            result.put("colBot", shotResult.get("botShotCol"));
+            result.put("hitBot", shotResult.get("botShotResult"));
+            result.put("shipSunk", shotResult.get("shipSunk"));
+            result.put("shipSunkBot", shotResult.get("shipSunkBot"));
             
-            // Enviar el resultado al cliente
-            messagingTemplate.convertAndSend("/topic/game/" + sessionId, result);
             
             // Si el jugador ganó, enviar mensaje adicional de GAME_OVER
-            Boolean gameOver = (Boolean) result.get("gameOver");
+            Boolean gameOver = (Boolean) shotResult.get("gameOver") || (Boolean) shotResult.get("gameOverBot");
             if (gameOver) {
                 Map<String, Object> gameOverMessage = new HashMap<>();
                 gameOverMessage.put("type", "GAME_OVER");
-                gameOverMessage.put("winner", playerId);
+                if ((Boolean) shotResult.get("gameOver")) {
+                    gameOverMessage.put("winner", playerId);
+                } else if ((Boolean) shotResult.get("gameOverBot")) {
+                    gameOverMessage.put("winner", "BOT");
+                }
+                
                 messagingTemplate.convertAndSend("/topic/game/" + sessionId, gameOverMessage);
+            } else {
+                // Enviar el resultado al cliente
+                messagingTemplate.convertAndSend("/topic/game/" + sessionId, result);
             }
             
         } catch (Exception e) {

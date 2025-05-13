@@ -79,6 +79,7 @@ public class GameServiceBot {
         
         // Determinar resultado
         String result = "miss";
+        boolean shipSunk = false;
         if (gameState.getBotBoard()[row][col] != null) {
             Integer shipId = gameState.getBotBoard()[row][col];
             result = "hit";
@@ -97,7 +98,7 @@ public class GameServiceBot {
             }
             
             if (allHit) {
-                result = "sunk";
+                shipSunk = true;;
             }
         }
         
@@ -108,18 +109,18 @@ public class GameServiceBot {
         Map<String, Object> response = new HashMap<>();
         response.put("playerShotResult", result);
         response.put("gameOver", gameOver);
+        response.put("shipSunk", shipSunk);
         
         // Si el juego no ha terminado y es turno del bot, procesar su disparo
-        if (!gameOver) {
-            ShotResultDTO botShot = bot.processBotShot(gameState);
-            response.put("botShotResult", botShot.getResult());
-            response.put("botShotRow", botShot.getRow());
-            response.put("botShotCol", botShot.getCol());
-            
-            // Verificar si el bot ha ganado
-            boolean botWon = checkForVictory(gameState.getPlayerBoard(), gameState.getBotShots());
-            response.put("botWon", botWon);
-        }
+        ShotResultDTO botShot = bot.processBotShot(gameState);
+        response.put("botShotResult", botShot.getResult());
+        response.put("botShotRow", botShot.getRow());
+        response.put("botShotCol", botShot.getCol());
+        response.put("shipSunkBot", botShot.isShipSunk());
+        
+        // Verificar si el bot ha ganado
+        boolean gameOverBot = checkForVictory(gameState.getPlayerBoard(), gameState.getBotShots());
+        response.put("gameOverBot", gameOverBot);
         
         return response;
     }

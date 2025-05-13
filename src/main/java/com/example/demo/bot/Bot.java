@@ -121,6 +121,7 @@ public class Bot {
         
         // Determinar resultado
         String result = "miss";
+        boolean shipSunk = false; 
         if (gameState.getPlayerBoard()[row][col] != null) {
             Integer shipId = gameState.getPlayerBoard()[row][col];
             result = "hit";
@@ -139,39 +140,11 @@ public class Bot {
             }
             
             if (allHit) {
-                result = "sunk";
+                shipSunk = true;
             }
         }
-        ShotResultDTO shotResult = new ShotResultDTO(row, col, result);
+        ShotResultDTO shotResult = new ShotResultDTO(row, col, result, shipSunk);
         return shotResult;
     }
 
-    
-    
-    /**
-     * Clase interna para representar el resultado de un disparo.
-     */
-    public static class BotShot {
-        private int row;
-        private int col;
-        private String result; // "hit", "miss", "sunk"
-        
-        public BotShot(int row, int col, String result) {
-            this.row = row;
-            this.col = col;
-            this.result = result;
-        }
-        
-        public int getRow() {
-            return row;
-        }
-        
-        public int getCol() {
-            return col;
-        }
-        
-        public String getResult() {
-            return result;
-        }
-    }
 }

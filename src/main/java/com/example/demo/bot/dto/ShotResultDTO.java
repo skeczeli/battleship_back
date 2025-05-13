@@ -6,38 +6,29 @@ package com.example.demo.bot.dto;
 public class ShotResultDTO {
     private int row;
     private int col;
-    private String result; // "hit", "miss", "sunk"
+    private String result; // "hit", "miss"
+    private boolean shipSunk;
     
-    public ShotResultDTO() {
-        // Constructor vacío para serialización
-    }
-    
-    public ShotResultDTO(int row, int col, String result) {
+    public ShotResultDTO(int row, int col, String result, boolean shipSunk) {
         this.row = row;
         this.col = col;
+        this.result = result;
+        this.shipSunk = shipSunk;
     }
     
     public int getRow() {
         return row;
     }
     
-    public void setRow(int row) {
-        this.row = row;
-    }
-    
     public int getCol() {
         return col;
     }
     
-    public void setCol(int col) {
-        this.col = col;
-    }
-
     public String getResult() {
         return result;
     }
 
-    public void setResult(String result) {
-        this.result = result;
+    public boolean isShipSunk() {
+        return shipSunk;
     }
 }
