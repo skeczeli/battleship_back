@@ -1,5 +1,7 @@
 package com.example.demo.bot;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import com.example.demo.bot.dto.ShotResultDTO;
@@ -27,14 +29,16 @@ public class Bot {
      * 
      * @return Matriz 10x10 con los IDs de los barcos o null en celdas vacías
      */
-    public Integer[][] generateRandomBoard() {
-        Integer[][] board = new Integer[BOARD_SIZE][BOARD_SIZE];
+    public List<List<Integer>> generateRandomBoard() {
+        List<List<Integer>> board = new ArrayList<>();
         
         // Inicializar tablero vacío
         for (int i = 0; i < BOARD_SIZE; i++) {
+            List<Integer> row = new ArrayList<>();
             for (int j = 0; j < BOARD_SIZE; j++) {
-                board[i][j] = null;
+                row.add(null);
             }
+            board.add(row);
         }
         
         // Colocar cada barco
@@ -70,14 +74,14 @@ public class Bot {
     /**
      * Verifica si un barco puede ser colocado en la posición específica.
      */
-    private boolean canPlaceShip(Integer[][] board, int startRow, int startCol, int size, boolean isHorizontal) {
+    private boolean canPlaceShip(List<List<Integer>> board, int startRow, int startCol, int size, boolean isHorizontal) {
         // Verificar cada celda y su entorno
         for (int i = 0; i < size; i++) {
             int row = isHorizontal ? startRow : startRow + i;
             int col = isHorizontal ? startCol + i : startCol;
             
             // Verificar que la celda esté vacía
-            if (board[row][col] != null) {
+            if (board.get(row).get(col) != null) {
                 return false;
             }
             
@@ -86,7 +90,7 @@ public class Bot {
                 for (int c = Math.max(0, col - 1); c <= Math.min(BOARD_SIZE - 1, col + 1); c++) {
                     // Si hay un barco adyacente, no podemos colocar
                     if (r != row || c != col) { // No verificar la celda actual
-                        if (board[r][c] != null) {
+                        if (board.get(r).get(c) != null) {
                             return false;
                         }
                     }
@@ -99,11 +103,11 @@ public class Bot {
     /**
      * Coloca un barco en el tablero.
      */
-    private void placeShip(Integer[][] board, int startRow, int startCol, int shipId, int size, boolean isHorizontal) {
+    private void placeShip(List<List<Integer>> board, int startRow, int startCol, int shipId, int size, boolean isHorizontal) {
         for (int i = 0; i < size; i++) {
             int row = isHorizontal ? startRow : startRow + i;
             int col = isHorizontal ? startCol + i : startCol;
-            board[row][col] = shipId;
+            board.get(row).set(col, shipId);
         }
     }
 
@@ -122,16 +126,16 @@ public class Bot {
         // Determinar resultado
         String result = "miss";
         boolean shipSunk = false; 
-        if (gameState.getPlayerBoard()[row][col] != null) {
-            Integer shipId = gameState.getPlayerBoard()[row][col];
+        if (gameState.getPlayerBoard().get(row).get(col) != null) {
+            Integer shipId = gameState.getPlayerBoard().get(row).get(col);
             result = "hit";
             
             // Verificar si el barco está hundido
             boolean allHit = true;
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
-                    if (gameState.getPlayerBoard()[i][j] != null && 
-                        gameState.getPlayerBoard()[i][j].equals(shipId) && 
+                    if (gameState.getPlayerBoard().get(i).get(j) != null && 
+                        gameState.getPlayerBoard().get(i).get(j).equals(shipId) && 
                         !gameState.getBotShots()[i][j]) {
                         allHit = false;
                         break;

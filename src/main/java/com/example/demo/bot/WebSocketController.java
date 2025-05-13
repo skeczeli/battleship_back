@@ -41,7 +41,6 @@ public class WebSocketController {
             Map<String, Object> shotResult = gameServiceBot.processPlayerShot(sessionId, shot);
             
             // Añadir información que necesita el frontend
-            result.put("type", "SHOT_RESULT");
             result.put("playerId", playerId);
             result.put("row", row);
             result.put("col", col);
@@ -56,20 +55,19 @@ public class WebSocketController {
             // Si el jugador ganó, enviar mensaje adicional de GAME_OVER
             Boolean gameOver = (Boolean) shotResult.get("gameOver") || (Boolean) shotResult.get("gameOverBot");
             if (gameOver) {
-                Map<String, Object> gameOverMessage = new HashMap<>();
-                gameOverMessage.put("type", "GAME_OVER");
+                result.put("gameOver", true);
                 if ((Boolean) shotResult.get("gameOver")) {
-                    gameOverMessage.put("winner", playerId);
+                    result.put("winner", playerId);
                 } else if ((Boolean) shotResult.get("gameOverBot")) {
-                    gameOverMessage.put("winner", "BOT");
+                    result.put("winner", "BOT");
                 }
-                
-                messagingTemplate.convertAndSend("/topic/game/" + sessionId, gameOverMessage);
             } else {
                 // Enviar el resultado al cliente
-                messagingTemplate.convertAndSend("/topic/game/" + sessionId, result);
+                result.put("gameOver", false);
+                result.put("winner", null);
+                
             }
-            
+            messagingTemplate.convertAndSend("/topic/game/" + sessionId, result);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("type", "ERROR");
@@ -78,25 +76,6 @@ public class WebSocketController {
         }
     }
 
-    @MessageMapping("/game/{sessionId}/join")
-    public void joinGame(@DestinationVariable String sessionId, Map<String, Object> joinData) {
-        try {
-            String playerId = (String) joinData.get("playerId");
-            
-            // Crear mensaje de inicio de juego
-            Map<String, Object> gameStartMessage = new HashMap<>();
-            gameStartMessage.put("type", "GAME_START");
-            gameStartMessage.put("turn", playerId); // Asumiendo que el jugador siempre empieza
-            
-            // Enviar mensaje de que el juego ha comenzado
-            messagingTemplate.convertAndSend("/topic/game/" + sessionId, gameStartMessage);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("type", "ERROR");
-            errorResponse.put("error", e.getMessage());
-            messagingTemplate.convertAndSend("/topic/game/" + sessionId, errorResponse);
-        }
-    }
     @MessageMapping("/game/{sessionId}/abandon")
     public void abandonGame(@DestinationVariable String sessionId, Map<String, Object> abandonData) {
         try {

@@ -1,30 +1,28 @@
 package com.example.demo.game;
 
+import java.util.List;
+
 public class GameState {
-    private Integer[][] playerBoard;
-    private Integer[][] botBoard;
+    private List<List<Integer>> playerBoard;
+    private List<List<Integer>> botBoard;
     private boolean[][] playerShots;
     private boolean[][] botShots;
+    private String playerId;
     
-    public  GameState() {
+    public  GameState(List<List<Integer>> playerBoard, List<List<Integer>> botBoard, String playerId) {
         playerShots = new boolean[10][10];
         botShots = new boolean[10][10];
+        this.playerBoard = playerBoard;
+        this.botBoard = botBoard;
+        this.playerId = playerId;
     }
     
-    public Integer[][] getPlayerBoard() {
+    public List<List<Integer>> getPlayerBoard() {
         return playerBoard;
     }
     
-    public void setPlayerBoard(Integer[][] playerBoard) {
-        this.playerBoard = playerBoard;
-    }
-    
-    public Integer[][] getBotBoard() {
+    public List<List<Integer>> getBotBoard() {
         return botBoard;
-    }
-    
-    public void setBotBoard(Integer[][] botBoard) {
-        this.botBoard = botBoard;
     }
     
     public boolean[][] getPlayerShots() {
@@ -33,6 +31,10 @@ public class GameState {
     
     public boolean[][] getBotShots() {
         return botShots;
+    }
+
+    public String getPlayerId() {
+        return playerId;
     }
 
 }

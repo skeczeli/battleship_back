@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Servicio para gestionar el estado del juego y coordinar la lógica.
@@ -26,6 +27,10 @@ public class GameServiceBot {
     public GameServiceBot(Bot bot) {
         this.bot = bot;
     }
+
+    public GameState getGameState(String sessionId) {
+        return gameStates.get(sessionId);
+    }
     
     /**
      * Inicia un nuevo juego contra el bot.
@@ -33,17 +38,15 @@ public class GameServiceBot {
      * @param playerBoard Tablero del jugador
      * @return Identificador de sesión y tablero del bot
      */
-    public String startGame(Integer[][] playerBoard) {
+    public String startGame(List<List<Integer>> playerBoard, String playerId) {
         // Generar ID único para la sesión
         String sessionId = UUID.randomUUID().toString();
     
         // Generar tablero para el bot
-        Integer[][] botBoard = bot.generateRandomBoard();
+        List<List<Integer>> botBoard = bot.generateRandomBoard();
         
         // Crear nuevo estado de juego
-        GameState gameState = new GameState();
-        gameState.setPlayerBoard(playerBoard);
-        gameState.setBotBoard(botBoard);
+        GameState gameState = new GameState(playerBoard, botBoard, playerId);
         
         // Guardar estado
         gameStates.put(sessionId, gameState);
@@ -80,16 +83,16 @@ public class GameServiceBot {
         // Determinar resultado
         String result = "miss";
         boolean shipSunk = false;
-        if (gameState.getBotBoard()[row][col] != null) {
-            Integer shipId = gameState.getBotBoard()[row][col];
+        if (gameState.getBotBoard().get(row).get(col) != null) {
+            Integer shipId = gameState.getBotBoard().get(row).get(col);
             result = "hit";
             
             // Verificar si el barco está hundido
             boolean allHit = true;
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
-                    if (gameState.getBotBoard()[i][j] != null && 
-                        gameState.getBotBoard()[i][j].equals(shipId) && 
+                    if (gameState.getBotBoard().get(i).get(j) != null && 
+                        gameState.getBotBoard().get(i).get(j).equals(shipId) && 
                         !gameState.getPlayerShots()[i][j]) {
                         allHit = false;
                         break;
@@ -111,7 +114,7 @@ public class GameServiceBot {
         response.put("gameOver", gameOver);
         response.put("shipSunk", shipSunk);
         
-        // Si el juego no ha terminado y es turno del bot, procesar su disparo
+        //Turno del bot, procesar su disparo
         ShotResultDTO botShot = bot.processBotShot(gameState);
         response.put("botShotResult", botShot.getResult());
         response.put("botShotRow", botShot.getRow());
@@ -128,10 +131,10 @@ public class GameServiceBot {
     /**
      * Verifica si hay victoria (todos los barcos hundidos).
      */
-    private boolean checkForVictory(Integer[][] board, boolean[][] shots) {
+    private boolean checkForVictory(List<List<Integer>> board, boolean[][] shots) {
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
-                if (board[i][j] != null && !shots[i][j]) {
+                if (board.get(i).get(j) != null && !shots[i][j]) {
                     // Hay al menos una celda de barco que no ha sido disparada
                     return false;
                 }
