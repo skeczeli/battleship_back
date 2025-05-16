@@ -1,5 +1,6 @@
 package com.example.demo.game;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
@@ -7,19 +8,36 @@ import java.util.*;
 @RequestMapping("/api/game")
 @CrossOrigin(origins = "http://localhost:3000")  // Permite que React acceda
 public class GameController {
+    SimpMessagingTemplate messagingTemplate;
 
-    @PostMapping("/setup")
+    // Estado temporal del juego:
+    public static final Map<String, Map<String, Object>> gameInitData = new HashMap<>();
+
+    public GameController(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
+    }
+
+    @PostMapping("/setup/bot")
     public Map<String, Object> setupGame(@RequestBody Map<String, Object> request) {
         List<List<Object>> playerBoard = (List<List<Object>>) request.get("board");
+        String playerId = (String) request.get("playerId");
+        String gameId = UUID.randomUUID().toString();
 
         List<List<Object>> botBoard = generateBotBoard();
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("playerBoard", playerBoard);
-        response.put("botBoard", botBoard);
+        // Guardar el estado en memoria para usarlo en el paso siguiente
+        // gameStorage.put(gameId, new GameState(playerBoard, botBoard, playerId));
 
-        return response;
+        // Guardar los datos iniciales del juego para usarlos al hacer "join"
+        Map<String, Object> initData = new HashMap<>();
+        initData.put("playerBoard", playerBoard);
+        initData.put("botBoard", botBoard);
+        initData.put("turn", playerId);
+        gameInitData.put(gameId, initData);
+
+        return Map.of("gameId", gameId);
     }
+
 
     private List<List<Object>> generateBotBoard() {
         List<List<Object>> board = new ArrayList<>();
