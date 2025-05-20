@@ -38,7 +38,7 @@ public class WebSocketController {
             Map<String, Object> result = new HashMap<>();
 
             // Procesar el disparo del jugador
-            Map<String, Object> shotResult = gameServiceBot.processPlayerShot(sessionId, shot);
+            Map<String, Object> shotResult = gameServiceBot.processPlayerShot(sessionId, shot, playerId);
             
             // Añadir información que necesita el frontend
             result.put("playerId", playerId);

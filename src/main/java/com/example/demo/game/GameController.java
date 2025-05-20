@@ -2,9 +2,11 @@ package com.example.demo.game;
 
 import com.example.demo.bot.GameServiceBot;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,5 +38,22 @@ public class GameController {
         
         return Map.of("gameId",sessionId);
     }
+
+    @GetMapping("/resume/{sessionId}/{playerId}")
+    public ResponseEntity<Map<String, Object>> resumeGame(
+            @PathVariable String sessionId,
+            @PathVariable String playerId
+    ) {
+        GameState gameState = gameServiceBot.resumeGame(sessionId, playerId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("playerBoard", gameState.getPlayerBoard());
+        response.put("botBoard", gameState.getBotBoard());
+        response.put("playerShots", gameState.getPlayerShots());
+        response.put("botShots", gameState.getBotShots());
+
+        return ResponseEntity.ok(response);
+    }
+
 
 }
