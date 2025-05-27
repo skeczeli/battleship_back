@@ -38,7 +38,7 @@ public class GameViewService {
             for (int col = 0; col < 10; col++) {
                 Integer value = board.get(row).get(col);
                 if (botShots[row][col]) {
-                    line.add(value != null ? -Math.abs(value) : -1); // negativo = impactado, -1 = disparo vacío
+                    line.add(value != null ? -Math.abs(value) : 0); // negativo = impactado, 0 = miss
                 } else {
                     line.add(value);
                 }
