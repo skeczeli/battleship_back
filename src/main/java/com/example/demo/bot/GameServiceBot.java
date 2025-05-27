@@ -1,11 +1,13 @@
 package com.example.demo.bot;
 
+import com.example.demo.bot.dto.GameViewDTO;
 import com.example.demo.bot.dto.ShotDTO;
 import com.example.demo.bot.dto.ShotResultDTO;
 import com.example.demo.game.GameSession;
 import com.example.demo.game.GameSessionRepository;
 import com.example.demo.game.GameState;
 
+import com.example.demo.game.GameViewService;
 import com.example.demo.shot.Shot;
 import com.example.demo.shot.ShotRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -181,54 +183,54 @@ public class GameServiceBot {
         return response;
     }
 
-    public GameState resumeGame(String sessionId, String playerId) {
+    public GameViewDTO resumeGame(String sessionId, String playerId) {
         // Verificar si ya está cargado en memoria
-        if (gameStates.containsKey(sessionId)) return gameStates.get(sessionId);
+        GameState state = gameStates.get(sessionId);
+        if (state == null) {
+            // Buscar la sesión en la base
+            GameSession session = gameSessionRepository.findBySessionId(sessionId);
+            if (session == null) throw new IllegalArgumentException("Partida no encontrada");
 
-        // Buscar la sesión en la base
-        GameSession session = gameSessionRepository.findBySessionId(sessionId);
-        if (session == null) throw new IllegalArgumentException("Partida no encontrada");
-
-        // Validar que el jugador sea el correcto
-        if (!session.getPlayerOneId().equals(playerId)) {
-            throw new IllegalArgumentException("Jugador no autorizado para esta partida");
-        }
-
-        // Buscar tableros
-        List<List<Integer>> playerBoard;
-        List<List<Integer>> botBoard;
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-
-            playerBoard = mapper.readValue(session.getPlayerBoardJson(), List.class);
-            botBoard = mapper.readValue(session.getBotBoardJson(), List.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error deserializando los tableros", e);
-        }
-
-
-        // Crear GameState en blanco
-        GameState gameState = new GameState(playerBoard, botBoard, playerId);
-
-        // Rellenar los disparos desde la base
-        List<Shot> shots = shotRepository.findAll(); // filtramos abajo
-
-        for (Shot shot : shots) {
-            if (!shot.getSessionId().equals(sessionId)) continue;
-
-            if (shot.isBot()) {
-                gameState.getBotShots()[shot.getRow()][shot.getCol()] = true;
-            } else {
-                gameState.getPlayerShots()[shot.getRow()][shot.getCol()] = true;
+            if (!session.getPlayerOneId().equals(playerId)) {
+                throw new IllegalArgumentException("Jugador no autorizado para esta partida");
             }
+
+            // Parsear tableros
+            List<List<Integer>> playerBoard;
+            List<List<Integer>> botBoard;
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                playerBoard = mapper.readValue(session.getPlayerBoardJson(), List.class);
+                botBoard = mapper.readValue(session.getBotBoardJson(), List.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Error deserializando los tableros", e);
+            }
+
+            // Crear estado
+            state = new GameState(playerBoard, botBoard, playerId);
+
+            // Disparos
+            List<Shot> shots = shotRepository.findAll().stream()
+                    .filter(s -> s.getSessionId().equals(sessionId))
+                    .toList();
+
+            for (Shot shot : shots) {
+                if (shot.isBot()) {
+                    state.getBotShots()[shot.getRow()][shot.getCol()] = true;
+                } else {
+                    state.getPlayerShots()[shot.getRow()][shot.getCol()] = true;
+                }
+            }
+
+            gameStates.put(sessionId, state);
         }
 
-        // Guardarlo en memoria
-        gameStates.put(sessionId, gameState);
+        // Obtener sesión de base por si no la teníamos
+        GameSession session = gameSessionRepository.findBySessionId(sessionId);
+        List<Shot> allShots = shotRepository.findAll();
 
-        return gameState;
+        return GameViewService.toView(session, state, allShots);
     }
-
 
     /**
      * Verifica si hay victoria (todos los barcos hundidos).

@@ -8,12 +8,14 @@ public class ShotResultDTO {
     private int col;
     private String result; // "hit", "miss"
     private boolean shipSunk;
+    private Integer shipId;
     
-    public ShotResultDTO(int row, int col, String result, boolean shipSunk) {
+    public ShotResultDTO(int row, int col, String result, boolean shipSunk, Integer shipId) {
         this.row = row;
         this.col = col;
         this.result = result;
         this.shipSunk = shipSunk;
+        this.shipId = shipId;
     }
     
     public int getRow() {
@@ -31,4 +33,6 @@ public class ShotResultDTO {
     public boolean isShipSunk() {
         return shipSunk;
     }
+
+    public Integer getShipId() { return shipId; }
 }

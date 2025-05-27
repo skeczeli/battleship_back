@@ -1,6 +1,7 @@
 package com.example.demo.game;
 
 import com.example.demo.bot.GameServiceBot;
+import com.example.demo.bot.dto.GameViewDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -44,13 +45,16 @@ public class GameController {
             @PathVariable String sessionId,
             @PathVariable String playerId
     ) {
-        GameState gameState = gameServiceBot.resumeGame(sessionId, playerId);
+        GameViewDTO gameView = gameServiceBot.resumeGame(sessionId, playerId);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("playerBoard", gameState.getPlayerBoard());
-        response.put("botBoard", gameState.getBotBoard());
-        response.put("playerShots", gameState.getPlayerShots());
-        response.put("botShots", gameState.getBotShots());
+        response.put("playerBoard", gameView.playerBoard());
+        response.put("botBoard", gameView.opponentBoard());
+        response.put("sunkShips", gameView.sunkShips());
+        response.put("lastShot", gameView.lastShot());
+        response.put("gameOver", gameView.gameOver());
+        response.put("winner", gameView.winner());
+        response.put("turn", gameView.turn());
 
         return ResponseEntity.ok(response);
     }

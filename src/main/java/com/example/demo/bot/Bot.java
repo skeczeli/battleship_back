@@ -125,9 +125,10 @@ public class Bot {
         
         // Determinar resultado
         String result = "miss";
+        Integer shipId = null;
         boolean shipSunk = false; 
         if (gameState.getPlayerBoard().get(row).get(col) != null) {
-            Integer shipId = gameState.getPlayerBoard().get(row).get(col);
+            shipId = gameState.getPlayerBoard().get(row).get(col);
             result = "hit";
             
             // Verificar si el barco está hundido
@@ -147,7 +148,7 @@ public class Bot {
                 shipSunk = true;
             }
         }
-        ShotResultDTO shotResult = new ShotResultDTO(row, col, result, shipSunk);
+        ShotResultDTO shotResult = new ShotResultDTO(row, col, result, shipSunk, shipId);
         return shotResult;
     }
 
