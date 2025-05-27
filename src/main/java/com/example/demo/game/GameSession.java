@@ -15,7 +15,7 @@ public class GameSession {
     private String playerTwoId;
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
-    private String winner; // playerOneId, playerTwoId, "bot", "none"
+    private String winner; // playerOneId, playerTwoId, "bot", null
 
     @Column(columnDefinition = "TEXT")
     private String playerBoardJson;
@@ -34,7 +34,7 @@ public class GameSession {
         this.playerBoardJson = playerBoardJson;
         this.botBoardJson = botBoardJson;
         this.startedAt = LocalDateTime.now();
-        this.winner = "none";
+        this.winner = null;
     }
 
 
@@ -108,6 +108,11 @@ public class GameSession {
 
     public void setBotBoardJson(String botBoardJson) {
         this.botBoardJson = botBoardJson;
+    }
+
+    @Override
+    public String toString() {
+        return "gs: id: " + id + ", winner: " + winner + ", ended at: " + endedAt + ", player1id: " + playerOneId + ", player2id: " + playerTwoId;
     }
 
 

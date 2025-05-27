@@ -74,7 +74,9 @@ public class GameServiceBot {
             System.out.println("GUARDANDO JSON:");
             System.out.println("Player board JSON: " + playerBoardJson);
             System.out.println("Bot board JSON: " + botBoardJson);
-            gameSessionRepository.save(session);
+            gameSessionRepository.saveAndFlush(session);
+            System.out.println("✅ INSERT OK: " + gameSessionRepository.findAll().size());
+            System.out.println(session);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error serializando los tableros", e);
         }
@@ -150,11 +152,16 @@ public class GameServiceBot {
         Shot playerShot = new Shot(sessionId, playerId, row, col, result.equals("hit"), shipSunk, false);
         shotRepository.save(playerShot);
 
-        if (gameOver) {
-            GameSession session = gameSessionRepository.findBySessionId(sessionId);
+        GameSession session = gameSessionRepository.findBySessionId(sessionId);
+
+        // Si el jugador ganó primero
+        System.out.println("Checking win condition...");
+        System.out.println("gameOver: " + gameOver + ", sessionWinner: " + session.getWinner());
+        if (gameOver && session.getWinner() == null) {
             session.setWinner(playerId);
             session.setEndedAt(LocalDateTime.now());
-            gameSessionRepository.save(session);
+            System.out.println("Setting player winner: " + session.getWinner());
+            gameSessionRepository.saveAndFlush(session);
         }
 
 
@@ -179,6 +186,15 @@ public class GameServiceBot {
                 true
         );
         shotRepository.save(botShot);
+
+        System.out.println("Checking win condition...");
+        System.out.println("gameOverBot: " + gameOverBot + ", sessionWinner: " + session.getWinner());
+        if (gameOverBot && session.getWinner() == null) {
+            session.setWinner("BOT");
+            session.setEndedAt(LocalDateTime.now());
+            System.out.println("Setting bot winner: " + session.getWinner());
+            gameSessionRepository.saveAndFlush(session);
+        }
 
         return response;
     }

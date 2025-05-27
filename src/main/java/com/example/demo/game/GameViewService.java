@@ -1,6 +1,7 @@
 package com.example.demo.game;
 
 import com.example.demo.bot.dto.GameViewDTO;
+import com.example.demo.bot.dto.LastShotDTO;
 import com.example.demo.bot.dto.ShotResultDTO;
 import com.example.demo.shot.Shot;
 
@@ -22,10 +23,14 @@ public class GameViewService {
                 "opponent", sunkOpponentShips,
                 "player", sunkPlayerShips
         );
-        ShotResultDTO lastShot = findLastShot(allShots, session.getSessionId(), state.getBotBoard(), state.getPlayerBoard());
+        LastShotDTO lastShot = findLastShot(allShots, session.getSessionId(), state.getBotBoard(), state.getPlayerBoard(), session.getWinner());
 
+        System.out.println(session.getWinner());
+        System.out.println(session.getEndedAt());
+        System.out.println(session.getPlayerOneId());
+        System.out.println(session.getPlayerTwoId());
         boolean gameOver = session.getWinner() != null && !session.getWinner().equals("none");
-        String winner = gameOver ? (session.getWinner().equals(state.getPlayerId()) ? "YOU" : "BOT") : null;
+        String winner = gameOver ? session.getWinner() : null;
         String turn = calculateTurn(allShots, session, state.getPlayerId());
 
         return new GameViewDTO(playerBoard, opponentBoard, sunkShips, lastShot, gameOver, winner, turn);
@@ -79,29 +84,36 @@ public class GameViewService {
     }
 
 
-    private static ShotResultDTO findLastShot(
+    private static LastShotDTO findLastShot(
             List<Shot> shots,
             String sessionId,
             List<List<Integer>> botBoard,
-            List<List<Integer>> playerBoard
+            List<List<Integer>> playerBoard,
+            String winner
     ) {
-        return shots.stream()
+        List<Shot> sessionShots = shots.stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
-                .reduce((a, b) -> b)  // último
-                .map(s -> {
-                    List<List<Integer>> targetBoard = s.isBot() ? playerBoard : botBoard;
-                    return new ShotResultDTO(
-                            s.getRow(),
-                            s.getCol(),
-                            s.isHit() ? "hit" : "miss",
-                            s.isShipSunk(),
-                            s.isShipSunk() ? getShipId(targetBoard, s.getRow(), s.getCol()) : null
-                    );
-                })
-                .orElse(null);
+                .toList();
+
+        int lastIndex = sessionShots.size() - 1;
+        int targetIndex = winner == null || "BOT".equals(winner) ? lastIndex : lastIndex - 1;
+
+        if (targetIndex < 0) return null;
+
+        Shot s = sessionShots.get(targetIndex);
+        List<List<Integer>> targetBoard = s.isBot() ? playerBoard : botBoard;
+
+        return new LastShotDTO(
+                s.getRow(),
+                s.getCol(),
+                s.isHit() ? "hit" : "miss",
+                s.isBot() ? "BOT" : s.getPlayerId(),
+                s.isShipSunk() ? (s.isBot() ? "¡El oponente hundió tu barco!" : "¡Hundiste un barco!") : null
+        );
+
     }
 
-
+    // not sure i love this
     private static String calculateTurn(List<Shot> shots, GameSession session, String playerId) {
         long playerShots = shots.stream()
                 .filter(s -> s.getSessionId().equals(session.getSessionId()) && !s.isBot())

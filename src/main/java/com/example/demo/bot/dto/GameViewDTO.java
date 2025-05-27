@@ -9,6 +9,6 @@ import java.util.Map;
  * @param winner        "YOU", "BOT" o null
  */
 public record GameViewDTO(List<List<Integer>> playerBoard, List<List<String>> opponentBoard, Map<String, List<Integer>> sunkShips,
-                          ShotResultDTO lastShot, boolean gameOver, String winner, String turn) {
+                          LastShotDTO lastShot, boolean gameOver, String winner, String turn) {
 }
 
