@@ -22,17 +22,17 @@ public class GameSession {
 
 
     @Column(columnDefinition = "TEXT")
-    private String botBoardJson;
+    private String playerTwoBoardJson;
 
 
     public GameSession() {}
 
-    public GameSession(String sessionId, String playerOneId, String playerTwoId, String playerBoardJson, String botBoardJson) {
+    public GameSession(String sessionId, String playerOneId, String playerTwoId, String playerBoardJson, String playerTwoBoardJson) {
         this.sessionId = sessionId;
         this.playerOneId = playerOneId;
         this.playerTwoId = playerTwoId;
         this.playerBoardJson = playerBoardJson;
-        this.botBoardJson = botBoardJson;
+        this.playerTwoBoardJson = playerTwoBoardJson;
         this.startedAt = LocalDateTime.now();
         this.winner = null;
     }
@@ -102,12 +102,12 @@ public class GameSession {
         this.playerBoardJson = playerBoardJson;
     }
 
-    public String getBotBoardJson() {
-        return botBoardJson;
+    public String getplayerTwoBoardJson() {
+        return playerTwoBoardJson;
     }
 
-    public void setBotBoardJson(String botBoardJson) {
-        this.botBoardJson = botBoardJson;
+    public void setplayerTwoBoardJson(String playerTwoBoardJson) {
+        this.playerTwoBoardJson = playerTwoBoardJson;
     }
 
     @Override

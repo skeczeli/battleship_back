@@ -59,7 +59,7 @@ public class GameServiceBot {
         List<List<Integer>> botBoard = bot.generateRandomBoard();
         
         // Crear nuevo estado de juego
-        GameState gameState = new GameState(playerBoard, botBoard, playerId);
+        GameState gameState = new GameState(playerBoard, botBoard, playerId, "BOT");
         
         // Guardar estado
         gameStates.put(sessionId, gameState);
@@ -117,16 +117,16 @@ public class GameServiceBot {
         // Determinar resultado
         String result = "miss";
         boolean shipSunk = false;
-        if (gameState.getBotBoard().get(row).get(col) != null) {
-            Integer shipId = gameState.getBotBoard().get(row).get(col);
+        if (gameState.getEnemyBoard().get(row).get(col) != null) {
+            Integer shipId = gameState.getEnemyBoard().get(row).get(col);
             result = "hit";
             
             // Verificar si el barco está hundido
             boolean allHit = true;
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
-                    if (gameState.getBotBoard().get(i).get(j) != null && 
-                        gameState.getBotBoard().get(i).get(j).equals(shipId) && 
+                    if (gameState.getEnemyBoard().get(i).get(j) != null && 
+                        gameState.getEnemyBoard().get(i).get(j).equals(shipId) && 
                         !gameState.getPlayerShots()[i][j]) {
                         allHit = false;
                         break;
@@ -140,7 +140,7 @@ public class GameServiceBot {
         }
         
         // Verificar si el juego ha terminado
-        boolean gameOver = checkForVictory(gameState.getBotBoard(), gameState.getPlayerShots());
+        boolean gameOver = checkForVictory(gameState.getEnemyBoard(), gameState.getPlayerShots());
         
         
         Map<String, Object> response = new HashMap<>();
@@ -173,7 +173,7 @@ public class GameServiceBot {
         response.put("shipSunkBot", botShotDTO.isShipSunk());
         
         // Verificar si el bot ha ganado
-        boolean gameOverBot = checkForVictory(gameState.getPlayerBoard(), gameState.getBotShots());
+        boolean gameOverBot = checkForVictory(gameState.getPlayerBoard(), gameState.getplayerTwoShots());
         response.put("gameOverBot", gameOverBot);
 
         Shot botShot = new Shot(
@@ -217,13 +217,13 @@ public class GameServiceBot {
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 playerBoard = mapper.readValue(session.getPlayerBoardJson(), List.class);
-                botBoard = mapper.readValue(session.getBotBoardJson(), List.class);
+                botBoard = mapper.readValue(session.getplayerTwoBoardJson(), List.class);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Error deserializando los tableros", e);
             }
 
             // Crear estado
-            state = new GameState(playerBoard, botBoard, playerId);
+            state = new GameState(playerBoard, botBoard, playerId, "BOT");
 
             // Disparos
             List<Shot> shots = shotRepository.findAll().stream()
@@ -232,7 +232,7 @@ public class GameServiceBot {
 
             for (Shot shot : shots) {
                 if (shot.isBot()) {
-                    state.getBotShots()[shot.getRow()][shot.getCol()] = true;
+                    state.getplayerTwoShots()[shot.getRow()][shot.getCol()] = true;
                 } else {
                     state.getPlayerShots()[shot.getRow()][shot.getCol()] = true;
                 }

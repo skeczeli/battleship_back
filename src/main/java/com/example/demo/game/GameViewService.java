@@ -2,7 +2,6 @@ package com.example.demo.game;
 
 import com.example.demo.bot.dto.GameViewDTO;
 import com.example.demo.bot.dto.LastShotDTO;
-import com.example.demo.bot.dto.ShotResultDTO;
 import com.example.demo.shot.Shot;
 
 import java.util.*;
@@ -12,18 +11,18 @@ public class GameViewService {
 
     public static GameViewDTO toView(GameSession session, GameState state, List<Shot> allShots) {
         List<List<Integer>> rawPlayerBoard = state.getPlayerBoard();
-        boolean[][] botShots = state.getBotShots();
+        boolean[][] botShots = state.getplayerTwoShots();
         boolean[][] playerShots = state.getPlayerShots();
 
         List<List<Integer>> playerBoard = applyShotsToPlayerBoard(rawPlayerBoard, botShots);
         List<List<String>> opponentBoard = generateOpponentView(playerShots, allShots, session.getSessionId(), false);
-        List<Integer> sunkOpponentShips = detectSunkShips(allShots, session.getSessionId(), false, state.getBotBoard());
+        List<Integer> sunkOpponentShips = detectSunkShips(allShots, session.getSessionId(), false, state.getEnemyBoard());
         List<Integer> sunkPlayerShips = detectSunkShips(allShots, session.getSessionId(), true, state.getPlayerBoard());
         Map<String, List<Integer>> sunkShips = Map.of(
                 "opponent", sunkOpponentShips,
                 "player", sunkPlayerShips
         );
-        LastShotDTO lastShot = findLastShot(allShots, session.getSessionId(), state.getBotBoard(), state.getPlayerBoard(), session.getWinner());
+        LastShotDTO lastShot = findLastShot(allShots, session.getSessionId(), state.getEnemyBoard(), state.getPlayerBoard(), session.getWinner());
 
         System.out.println(session.getWinner());
         System.out.println(session.getEndedAt());

@@ -118,10 +118,10 @@ public class Bot {
         do {
             row = (int) (Math.random() * 10);
             col = (int) (Math.random() * 10);
-        } while (gameState.getBotShots()[row][col]);
+        } while (gameState.getplayerTwoShots()[row][col]);
         
         // Marcar la celda como disparada
-        gameState.getBotShots()[row][col] = true;
+        gameState.getplayerTwoShots()[row][col] = true;
         
         // Determinar resultado
         String result = "miss";
@@ -137,7 +137,7 @@ public class Bot {
                 for (int j = 0; j < 10; j++) {
                     if (gameState.getPlayerBoard().get(i).get(j) != null && 
                         gameState.getPlayerBoard().get(i).get(j).equals(shipId) && 
-                        !gameState.getBotShots()[i][j]) {
+                        !gameState.getplayerTwoShots()[i][j]) {
                         allHit = false;
                         break;
                     }

@@ -23,7 +23,7 @@ public class WebSocketController {
         this.messagingTemplate = messagingTemplate;
     }
 
-    @MessageMapping("/game/{sessionId}/shot")
+    @MessageMapping("/game/bot/{sessionId}/shot")
     public void playerShot(@DestinationVariable String sessionId, Map<String, Object> shotData) {
         try {
             Integer row = (Integer) shotData.get("row");
@@ -76,7 +76,7 @@ public class WebSocketController {
         }
     }
 
-    @MessageMapping("/game/{sessionId}/abandon")
+    @MessageMapping("/game/bot/{sessionId}/abandon")
     public void abandonGame(@DestinationVariable String sessionId, Map<String, Object> abandonData) {
         try {
             String playerId = (String) abandonData.get("playerId");
