@@ -32,9 +32,10 @@ public class GameControllerBot {
         // Extraer el tablero del jugador y el ID del jugador del cuerpo de la solicitud
         List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
         String playerId = (String) setupData.get("playerId");
+        String difficulty = (String) setupData.getOrDefault("difficulty", "simple");
         
         // Iniciar el juego y obtener el ID de sesión
-        String sessionId = gameServiceBot.startGame(playerBoard, playerId);
+        String sessionId = gameServiceBot.startGame(playerBoard, playerId, difficulty);
         
         return Map.of("gameId",sessionId);
     }

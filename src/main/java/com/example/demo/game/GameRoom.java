@@ -8,7 +8,7 @@ public class GameRoom {
     private String player2Id;
     private List<List<Integer>> player1Board;
     private List<List<Integer>> player2Board;
-    private String status; // "WAITING_FOR_PLAYER", "READY_TO_START", "IN_PROGRESS"
+    private String status; // "WAITING_FOR_PLAYER", "IN_PROGRESS"
 
     public String getSessionId() {
         return sessionId;

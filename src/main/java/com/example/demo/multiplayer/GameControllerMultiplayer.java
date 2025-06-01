@@ -29,58 +29,57 @@ public class GameControllerMultiplayer {
     }
 
 
-    @PostMapping("/setup/multiplayer") // Cambiar ruta
-    public Map<String, String> createOrJoinGame(@RequestBody Map<String, Object> setupData) {
+    @PostMapping("/setup/multiplayer")
+    public Map<String, String> CreateGameRoom(@RequestBody Map<String, Object> setupData) {
         List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
         String playerId = (String) setupData.get("playerId");
-        String sessionId = (String) setupData.get("sessionId");
+        String sessionId;
+
+        sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId);
+        return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
+    }
         
-        if (sessionId == null) {
-            // Crear nueva sala
-            sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId);
+
+    @GetMapping("/waiting")
+    public Map<String, String> findWaitingGame() {
+        String sessionId = gameServiceMultiplayer.findWaitingGame();
+        if (sessionId != null) {
             return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
         } else {
-            // Unirse a sala existente
-            boolean joined = gameServiceMultiplayer.joinGameRoom(sessionId, playerBoard, playerId);
-            if (joined) {
-                // Notificar a ambos jugadores que el juego puede empezar
-                notifyGameStart(sessionId);
-                return Map.of("gameId", sessionId, "status", "GAME_STARTED");
-            } else {
-                throw new IllegalStateException("No se pudo unir a la sala");
-            }
+            return Map.of("gameId", "", "status", "NO_AVAILABLE_GAMES");
         }
     }
 
 
-    private void notifyGameStart(String sessionId) { //mmmm detalle(?
-        Map<String, Object> gameStartMessage = new HashMap<>();
-        gameStartMessage.put("type", "GAME_START");
-        gameStartMessage.put("message", "Ambos jugadores listos. ¡El juego comienza!");
-        
-        simpMessagingTemplate.convertAndSend("/topic/game/" + sessionId, gameStartMessage);
-    }
-        
-
     @GetMapping("/resume/multiplayer/{sessionId}/{playerId}")
-    public ResponseEntity<Map<String, Object>> resumeGame(
+    public ResponseEntity<?> resumeGame(
             @PathVariable String sessionId,
-            @PathVariable String playerId,
-            @PathVariable String playerTwoId
+            @PathVariable String playerId
     ) {
-        GameViewDTO gameView = gameServiceMultiplayer.resumeGame(sessionId, playerId, playerTwoId);
+        try {
+            GameViewDTO gameView = gameServiceMultiplayer.resumeGame(sessionId, playerId);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("playerBoard", gameView.playerBoard());
-        response.put("botBoard", gameView.opponentBoard());
-        response.put("sunkShips", gameView.sunkShips());
-        response.put("lastShot", gameView.lastShot());
-        response.put("gameOver", gameView.gameOver());
-        response.put("winner", gameView.winner());
-        response.put("turn", gameView.turn());
+            Map<String, Object> response = new HashMap<>();
+            response.put("playerBoard", gameView.playerBoard());
+            response.put("opponentBoard", gameView.opponentBoard());
+            response.put("sunkShips", gameView.sunkShips());
+            response.put("lastShot", gameView.lastShot());
+            response.put("gameOver", gameView.gameOver());
+            response.put("winner", gameView.winner());
+            response.put("turn", gameView.turn());
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            // Jugador 2 aún no colocó su tablero
+            Map<String, Object> waiting = new HashMap<>();
+            waiting.put("status", "WAITING_FOR_OPPONENT");
+            return ResponseEntity.ok(waiting);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
+
 
 
 }

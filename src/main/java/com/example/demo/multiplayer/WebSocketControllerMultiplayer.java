@@ -2,7 +2,6 @@
 package com.example.demo.multiplayer;
 
 import com.example.demo.bot.dto.ShotDTO;
-import com.example.demo.game.GameRoom;
 import com.example.demo.game.GameState;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,24 +30,25 @@ public class WebSocketControllerMultiplayer {
       @MessageMapping("/game/multiplayer/{sessionId}/join")
     public void joinGame(@DestinationVariable String sessionId, Map<String, Object> joinData) {
         String playerId = (String) joinData.get("playerId");
-        List<List<Integer>> playerBoard = (List<List<Integer>>) joinData.get("board");
+        Object rawBoard = joinData.get("board");
+        List<List<Integer>> playerBoard = (List<List<Integer>>) (List<?>) rawBoard;
+
         
+
         boolean joined = gameServiceMultiplayer.joinGameRoom(sessionId, playerBoard, playerId);
         
         if (joined) {
             // Notificar que el juego puede empezar
             Map<String, Object> startMessage = new HashMap<>();
             startMessage.put("type", "GAME_START");
-            startMessage.put("turn", playerId); // O determinar quién empieza
-            startMessage.put("message", "¡El juego comienza!");
             
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, startMessage);
         } else {
-            Map<String, Object> waitMessage = new HashMap<>();
-            waitMessage.put("type", "WAITING_FOR_OPPONENT");
-            waitMessage.put("message", "Esperando al oponente...");
+            Map<String, Object> errorMessage = new HashMap<>();
+            errorMessage.put("type", "ERROR");
+            errorMessage.put("message", "No se pudo unir a la sala.");
             
-            messagingTemplate.convertAndSend("/topic/game/" + sessionId, waitMessage);
+            messagingTemplate.convertAndSend("/topic/game/" + sessionId, errorMessage);
         }
     }
 

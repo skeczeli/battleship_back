@@ -100,8 +100,7 @@ public class GameViewService {
         if (targetIndex < 0) return null;
 
         Shot s = sessionShots.get(targetIndex);
-        List<List<Integer>> targetBoard = s.isBot() ? playerBoard : botBoard;
-
+        
         return new LastShotDTO(
                 s.getRow(),
                 s.getCol(),

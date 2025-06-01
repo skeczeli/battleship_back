@@ -9,14 +9,16 @@ public class GameState {
     private boolean[][] playerTwoShots;
     private String playerId;
     private String playerTwoId;
+    private String botType;
     
-    public  GameState(List<List<Integer>> playerBoard, List<List<Integer>> EnemyBoard, String playerId, String playertwoId) {
+    public  GameState(List<List<Integer>> playerBoard, List<List<Integer>> EnemyBoard, String playerId, String playertwoId, String botType) {
         playerShots = new boolean[10][10];
         playerTwoShots = new boolean[10][10];
         this.playerBoard = playerBoard;
         this.EnemyBoard = EnemyBoard;
         this.playerId = playerId;
         this.playerTwoId = playertwoId;
+        this.botType = (botType == null) ? "simple" : botType;
     }
     
     public List<List<Integer>> getPlayerBoard() {
@@ -45,6 +47,14 @@ public class GameState {
 
     public void setPlayerTwoId(String playerTwoId) {
         this.playerTwoId = playerTwoId;
+    }
+
+    public String getBotType() {
+        return botType;
+    }
+
+    public void setBotType(String botType) {
+        this.botType = botType;
     }
 
 }
