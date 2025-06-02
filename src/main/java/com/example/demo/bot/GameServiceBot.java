@@ -189,7 +189,7 @@ public class GameServiceBot {
 
             // El botType no está en DB, asumimos "simple" por ahora
             state = new GameState(playerBoard, botBoard, playerId, "BOT", "simple"); //fuuuuuuck que hago y como. Osea el state que es donde yo guardaba, se esta fijando si en null en este caso (entonces ????)
-        
+            // todo: preguntale a @juan si ese comment sigue vigente o si resolvió su duda
             // Disparos
             List<Shot> shots = shotRepository.findAll().stream()
                     .filter(s -> s.getSessionId().equals(sessionId)).toList();
@@ -206,7 +206,10 @@ public class GameServiceBot {
         }
 
         GameSession session = gameSessionRepository.findBySessionId(sessionId);
-        List<Shot> allShots = shotRepository.findAll();
+        List<Shot> allShots = shotRepository.findAll().stream()
+                .filter(s -> s.getSessionId().equals(sessionId))
+                .sorted((s1, s2) -> s1.getId().compareTo(s2.getId())) // Ordenar por ID para asegurar orden cronológico
+                .toList();
 
         return GameViewService.toView(session, state, allShots);
     }

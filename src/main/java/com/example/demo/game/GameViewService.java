@@ -92,14 +92,13 @@ public class GameViewService {
     ) {
         List<Shot> sessionShots = shots.stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
+                .sorted((s1, s2) -> Long.compare(s1.getId(), s2.getId())) // Asegurar orden por ID
                 .toList();
 
+        if (sessionShots.isEmpty()) return null;
         int lastIndex = sessionShots.size() - 1;
-        int targetIndex = winner == null || "BOT".equals(winner) ? lastIndex : lastIndex - 1;
 
-        if (targetIndex < 0) return null;
-
-        Shot s = sessionShots.get(targetIndex);
+        Shot s = sessionShots.get(lastIndex);
         
         return new LastShotDTO(
                 s.getRow(),
