@@ -1,11 +1,13 @@
 package com.example.demo.bot;
 
 import com.example.demo.bot.dto.GameViewDTO;
+import com.example.demo.shot.Shot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,9 +57,11 @@ public class GameControllerBot {
         response.put("gameOver", gameView.gameOver());
         response.put("winner", gameView.winner());
         response.put("turn", gameView.turn());
+        response.put("shotHistory", gameView.history());
 
         return ResponseEntity.ok(response);
     }
+
 
 
 }
