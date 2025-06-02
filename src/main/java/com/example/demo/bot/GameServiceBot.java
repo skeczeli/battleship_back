@@ -1,7 +1,6 @@
 package com.example.demo.bot;
 
 import com.example.demo.bot.bots.BotStrategy;
-import com.example.demo.bot.bots.IntelligentBot;
 import com.example.demo.bot.dto.GameViewDTO;
 import com.example.demo.bot.dto.ShotDTO;
 import com.example.demo.bot.dto.ShotResultDTO;
@@ -12,6 +11,8 @@ import com.example.demo.game.GameState;
 import com.example.demo.game.GameViewService;
 import com.example.demo.shot.Shot;
 import com.example.demo.shot.ShotRepository;
+import com.example.demo.user.User;
+import com.example.demo.user.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 
@@ -37,6 +39,9 @@ public class GameServiceBot {
 
     // Mapas para almacenar el estado del juego por sesión
     private final Map<String, GameState> gameStates = new HashMap<>();
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     public GameServiceBot(
@@ -127,7 +132,10 @@ public class GameServiceBot {
         if (gameOver && session.getWinner() == null) {
             session.setWinner(playerId);
             session.setEndedAt(LocalDateTime.now());
+            // TODO: Aquí se podría guardar el tipo de partida (vs bot, vs jugador)
+            // session.setGameType("BOT");
             gameSessionRepository.saveAndFlush(session);
+            updateUserStats(playerId, true);
             return response;
         }
 
@@ -158,11 +166,34 @@ public class GameServiceBot {
         if (gameOverBot && session.getWinner() == null) {
         session.setWinner("BOT");
         session.setEndedAt(LocalDateTime.now());
+        // TODO: Aquí se podría guardar el tipo de partida (vs bot, vs jugador)
+        // session.setGameType("BOT");
         System.out.println("Setting bot winner: " + session.getWinner());
         gameSessionRepository.saveAndFlush(session);
+        updateUserStats(playerId, false);
         }
 
         return response;
+    }
+
+    // todo: should I register abandoned games as losses? ...
+    private void updateUserStats(String playerId, boolean won) {
+        // Solo actualizar si no es un invitado
+        if (playerId != null && !playerId.startsWith("guest")) {
+            // Buscar el usuario por username (asumiendo que playerId es username para usuarios registrados)
+            Optional<User> userOpt = userRepository.findByUsername(playerId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                if (won) {
+                    user.setWins(user.getWins() + 1);
+                } else {
+                    user.setLosses(user.getLosses() + 1);
+                }
+                userRepository.save(user);
+                System.out.println("Estadísticas actualizadas para " + playerId +
+                        " - Wins: " + user.getWins() + ", Losses: " + user.getLosses());
+            }
+        }
     }
 
     public GameViewDTO resumeGame(String sessionId, String playerId) {
