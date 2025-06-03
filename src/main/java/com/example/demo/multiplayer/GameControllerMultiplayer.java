@@ -57,7 +57,7 @@ public class GameControllerMultiplayer {
             @PathVariable String sessionId,
             @PathVariable String playerId
     ) {
-        System.out.println("HOLA PUTO: " + sessionId + ":" + playerId);
+        System.out.println("HOLA: " + sessionId + ":" + playerId);
         try {
             GameViewDTO gameView = gameServiceMultiplayer.resumeGame(sessionId, playerId);
 

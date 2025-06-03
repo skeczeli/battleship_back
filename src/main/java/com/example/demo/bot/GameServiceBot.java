@@ -213,7 +213,7 @@ public class GameServiceBot {
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 playerBoard = mapper.readValue(session.getPlayerBoardJson(), List.class);
-                botBoard = mapper.readValue(session.getplayerTwoBoardJson(), List.class);
+                botBoard = mapper.readValue(session.getPlayerTwoBoardJson(), List.class);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Error deserializando tableros", e);
             }
@@ -242,7 +242,7 @@ public class GameServiceBot {
                 .sorted((s1, s2) -> s1.getId().compareTo(s2.getId())) // Ordenar por ID para asegurar orden cronológico
                 .toList();
 
-        return GameViewService.toView(session, state, allShots);
+        return GameViewService.toView(session, state, allShots, playerId);
     }
 
     private boolean checkForVictory(List<List<Integer>> board, boolean[][] shots) {

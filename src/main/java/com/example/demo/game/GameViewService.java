@@ -9,30 +9,31 @@ import java.util.stream.Collectors;
 
 public class GameViewService {
 
-    public static GameViewDTO toView(GameSession session, GameState state, List<Shot> allShots) {
+    public static GameViewDTO toView(GameSession session, GameState state, List<Shot> allShots, String playerId) {
         String sessionId = session.getSessionId();
-        List<List<Integer>> rawPlayerBoard = state.getPlayerBoard();
-        boolean[][] botShots = state.getplayerTwoShots();
-        boolean[][] playerShots = state.getPlayerShots();
+        boolean isPlayerOne = playerId.equals(session.getPlayerOneId());
 
-        List<List<Integer>> playerBoard = applyShotsToPlayerBoard(rawPlayerBoard, botShots);
-        List<List<String>> opponentBoard = generateOpponentView(playerShots, allShots, sessionId, false);
-        List<Integer> sunkOpponentShips = detectSunkShips(allShots, sessionId, false, state.getEnemyBoard());
-        List<Integer> sunkPlayerShips = detectSunkShips(allShots, sessionId, true, state.getPlayerBoard());
+        List<List<Integer>> rawPlayerBoard = isPlayerOne ? state.getPlayerBoard() : state.getEnemyBoard();
+        boolean[][] shotsReceived = isPlayerOne ? state.getplayerTwoShots() : state.getPlayerShots(); // lo que me pegaron
+        boolean[][] shotsFired = isPlayerOne ? state.getPlayerShots() : state.getplayerTwoShots();     // lo que tiré
+
+        List<List<Integer>> playerBoard = applyShotsToPlayerBoard(rawPlayerBoard, shotsReceived);
+        List<List<String>> opponentBoard = generateOpponentView(shotsFired, allShots, sessionId, playerId);
+
+        List<Integer> sunkOpponentShips = detectSunkShips(allShots, sessionId, playerId, isPlayerOne ? state.getEnemyBoard() : state.getPlayerBoard());
+        List<Integer> sunkPlayerShips = detectSunkShips(allShots, sessionId, playerId.equals(session.getPlayerOneId()) ? session.getPlayerTwoId() : session.getPlayerOneId(), rawPlayerBoard);
+
         Map<String, List<Integer>> sunkShips = Map.of(
                 "opponent", sunkOpponentShips,
                 "player", sunkPlayerShips
         );
-        LastShotDTO lastShot = findLastShot(allShots, sessionId, state.getEnemyBoard(), state.getPlayerBoard(), session.getWinner());
-        List<Map<String, Object>> history = generateShotHistory(sessionId, allShots);
 
-        System.out.println(session.getWinner());
-        System.out.println(session.getEndedAt());
-        System.out.println(session.getPlayerOneId());
-        System.out.println(session.getPlayerTwoId());
+        LastShotDTO lastShot = findLastShot(allShots, sessionId);
+        List<Map<String, Object>> history = generateShotHistory(sessionId, allShots, playerId);
+
         boolean gameOver = session.getWinner() != null && !session.getWinner().equals("none");
         String winner = gameOver ? session.getWinner() : null;
-        String turn = calculateTurn(allShots, session, state.getPlayerId());
+        String turn = state.getCurrentTurn();
 
         return new GameViewDTO(playerBoard, opponentBoard, sunkShips, lastShot, gameOver, winner, turn, history);
     }
@@ -54,13 +55,13 @@ public class GameViewService {
         return result;
     }
 
-    private static List<List<String>> generateOpponentView(boolean[][] shots, List<Shot> allShots, String sessionId, boolean isBot) {
+    private static List<List<String>> generateOpponentView(boolean[][] shots, List<Shot> allShots, String sessionId, String playerId) {
         List<List<String>> result = new ArrayList<>();
         for (int i = 0; i < 10; i++) result.add(new ArrayList<>(Collections.nCopies(10, null)));
 
         for (Shot shot : allShots) {
             if (!shot.getSessionId().equals(sessionId)) continue;
-            if (shot.isBot() != isBot) continue;
+            if (!shot.getPlayerId().equals(playerId)) continue; // solo lo que YO tiré
 
             String value = shot.isHit() ? "hit" : "miss";
             result.get(shot.getRow()).set(shot.getCol(), value);
@@ -69,15 +70,16 @@ public class GameViewService {
         return result;
     }
 
+
     private static List<Integer> detectSunkShips(
             List<Shot> shots,
             String sessionId,
-            boolean attackerIsBot,  // quién disparó
-            List<List<Integer>> targetBoard  // sobre qué board se impactó
+            String attackerId,
+            List<List<Integer>> targetBoard
     ) {
         return shots.stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
-                .filter(s -> s.isBot() == attackerIsBot && s.isShipSunk())
+                .filter(s -> attackerId.equals(s.getPlayerId()) && s.isShipSunk())
                 .map(s -> getShipId(targetBoard, s.getRow(), s.getCol()))
                 .filter(Objects::nonNull)
                 .distinct()
@@ -87,10 +89,7 @@ public class GameViewService {
 
     private static LastShotDTO findLastShot(
             List<Shot> shots,
-            String sessionId,
-            List<List<Integer>> botBoard,
-            List<List<Integer>> playerBoard,
-            String winner
+            String sessionId
     ) {
         List<Shot> sessionShots = shots.stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
@@ -112,20 +111,22 @@ public class GameViewService {
 
     }
 
-    private static List<Map<String, Object>> generateShotHistory(String sessionId, List<Shot> shots) {
+    private static List<Map<String, Object>> generateShotHistory(String sessionId, List<Shot> shots, String playerId) {
         List<Map<String, Object>> history = new ArrayList<>();
 
         for (Shot shot : shots) {
+            if (!shot.getSessionId().equals(sessionId)) continue;
+
             Map<String, Object> shotData = new HashMap<>();
             shotData.put("row", shot.getRow());
             shotData.put("col", shot.getCol());
             shotData.put("hit", shot.isHit() ? "hit" : "miss");
-            shotData.put("player", shot.isBot() ? "opponent" : "player");
+            shotData.put("player", shot.getPlayerId().equals(playerId) ? "player" : "opponent");
 
             if (shot.isShipSunk()) {
-                shotData.put("message", shot.isBot() ?
-                        "¡El oponente hundió tu barco!" :
-                        "¡Hundiste un barco!");
+                shotData.put("message", shot.getPlayerId().equals(playerId) ?
+                        "¡Hundiste un barco!" :
+                        "¡El oponente hundió tu barco!");
             }
 
             history.add(shotData);

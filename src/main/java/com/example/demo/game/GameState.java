@@ -10,7 +10,8 @@ public class GameState {
     private String playerId;
     private String playerTwoId;
     private String botType;
-    
+    private String playerTurn;
+
     public  GameState(List<List<Integer>> playerBoard, List<List<Integer>> EnemyBoard, String playerId, String playertwoId, String botType) {
         playerShots = new boolean[10][10];
         playerTwoShots = new boolean[10][10];
@@ -19,8 +20,21 @@ public class GameState {
         this.playerId = playerId;
         this.playerTwoId = playertwoId;
         this.botType = (botType == null) ? "simple" : botType;
+        this.playerTurn = playerId;
     }
-    
+
+    public GameState(List<List<Integer>> playerBoard, List<List<Integer>> enemyBoard,
+                     String playerId, String playerTwoId, String startingTurn, String botType) {
+        this.playerBoard = playerBoard;
+        this.EnemyBoard = enemyBoard;
+        this.playerId = playerId;
+        this.playerTwoId = playerTwoId;
+        this.botType = (botType == null) ? "simple" : botType;
+        this.playerShots = new boolean[10][10];
+        this.playerTwoShots = new boolean[10][10];
+        this.playerTurn = startingTurn;
+    }
+
     public List<List<Integer>> getPlayerBoard() {
         return playerBoard;
     }
@@ -55,6 +69,14 @@ public class GameState {
 
     public void setBotType(String botType) {
         this.botType = botType;
+    }
+
+    public String getCurrentTurn() {
+        return playerTurn;
+    }
+
+    public void switchTurn() {
+        playerTurn = playerTurn.equals(playerId) ? playerTwoId : playerId;
     }
 
 }

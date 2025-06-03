@@ -10,7 +10,9 @@ public class GameSession {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    @Column(unique = true)
     private String sessionId; // UUID que ya genero en memoria
+
     private String playerOneId;
     private String playerTwoId;
     private LocalDateTime startedAt;
@@ -102,11 +104,11 @@ public class GameSession {
         this.playerBoardJson = playerBoardJson;
     }
 
-    public String getplayerTwoBoardJson() {
+    public String getPlayerTwoBoardJson() {
         return playerTwoBoardJson;
     }
 
-    public void setplayerTwoBoardJson(String playerTwoBoardJson) {
+    public void setPlayerTwoBoardJson(String playerTwoBoardJson) {
         this.playerTwoBoardJson = playerTwoBoardJson;
     }
 

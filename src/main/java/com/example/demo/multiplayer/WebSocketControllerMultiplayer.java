@@ -34,16 +34,17 @@ public class WebSocketControllerMultiplayer {
         List<List<Integer>> playerBoard = (List<List<Integer>>) (List<?>) rawBoard;
 
         System.out.println("playerId: " + playerId + ", sessionID: " + sessionId);
-        
+
 
         boolean joined = gameServiceMultiplayer.joinGameRoom(sessionId, playerBoard, playerId);
-        
+
         if (joined) {
-            // Notificar que el juego puede empezar
+            GameState gameState = gameServiceMultiplayer.getGameState(sessionId);
+
             Map<String, Object> startMessage = new HashMap<>();
             startMessage.put("type", "GAME_START");
-            startMessage.put("turn", playerId);
-            
+            startMessage.put("turn", gameState.getCurrentTurn());
+
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, startMessage);
         } else {
             Map<String, Object> errorMessage = new HashMap<>();
