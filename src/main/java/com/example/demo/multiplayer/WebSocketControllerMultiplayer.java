@@ -27,12 +27,13 @@ public class WebSocketControllerMultiplayer {
     }
 
     
-      @MessageMapping("/game/multiplayer/{sessionId}/join")
+    @MessageMapping("/game/multiplayer/{sessionId}/join")
     public void joinGame(@DestinationVariable String sessionId, Map<String, Object> joinData) {
         String playerId = (String) joinData.get("playerId");
         Object rawBoard = joinData.get("board");
         List<List<Integer>> playerBoard = (List<List<Integer>>) (List<?>) rawBoard;
 
+        System.out.println("playerId: " + playerId + ", sessionID: " + sessionId);
         
 
         boolean joined = gameServiceMultiplayer.joinGameRoom(sessionId, playerBoard, playerId);
@@ -41,6 +42,7 @@ public class WebSocketControllerMultiplayer {
             // Notificar que el juego puede empezar
             Map<String, Object> startMessage = new HashMap<>();
             startMessage.put("type", "GAME_START");
+            startMessage.put("turn", playerId);
             
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, startMessage);
         } else {

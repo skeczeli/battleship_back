@@ -1,6 +1,7 @@
 package com.example.demo.multiplayer;
 
 import com.example.demo.bot.dto.GameViewDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -30,7 +31,7 @@ public class GameControllerMultiplayer {
 
 
     @PostMapping("/setup/multiplayer")
-    public Map<String, String> CreateGameRoom(@RequestBody Map<String, Object> setupData) {
+    public Map<String, String> CreateGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
         List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
         String playerId = (String) setupData.get("playerId");
         String sessionId;
@@ -56,6 +57,7 @@ public class GameControllerMultiplayer {
             @PathVariable String sessionId,
             @PathVariable String playerId
     ) {
+        System.out.println("HOLA PUTO: " + sessionId + ":" + playerId);
         try {
             GameViewDTO gameView = gameServiceMultiplayer.resumeGame(sessionId, playerId);
 

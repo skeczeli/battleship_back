@@ -42,7 +42,7 @@ public class GameServiceMultiplayer {
     }
 
     // Crear una sala de espera
-    public String createGameRoom(List<List<Integer>> playerBoard, String playerId) {
+    public String createGameRoom(List<List<Integer>> playerBoard, String playerId) throws JsonProcessingException {
         String sessionId = UUID.randomUUID().toString();
         
         GameRoom room = new GameRoom();
@@ -50,8 +50,18 @@ public class GameServiceMultiplayer {
         room.setPlayer1Id(playerId);
         room.setPlayer1Board(playerBoard);
         room.setStatus("WAITING_FOR_PLAYER");
-        
+
         gameRooms.put(sessionId, room);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String playerBoardJson = mapper.writeValueAsString(playerBoard);
+
+        GameSession gameSession = new GameSession();
+        gameSession.setSessionId(sessionId);
+        gameSession.setPlayerOneId(playerId);
+        gameSession.setPlayerBoardJson(playerBoardJson);
+
+        gameSessionRepository.save(gameSession);
         
         return sessionId;
     }
@@ -59,10 +69,14 @@ public class GameServiceMultiplayer {
     // Un jugador se une a la sala
     public boolean joinGameRoom(String sessionId, List<List<Integer>> playerBoard, String playerId) {
         GameRoom room = gameRooms.get(sessionId);
+        System.out.println("room id: "+room);
         if (room == null || !room.getStatus().equals("WAITING_FOR_PLAYER")) {
             return false;
         }
-        
+
+        System.out.println("p1: "+room.getPlayer1Id());
+        System.out.println("p2: "+playerId);
+
         room.setPlayer2Id(playerId);
         room.setPlayer2Board(playerBoard);
         room.setStatus("IN_PROGRESS");
@@ -83,6 +97,8 @@ public class GameServiceMultiplayer {
             room.getPlayer2Id(),
             null
         );
+
+        System.out.println("gameState: "+gameState);
 
         gameStates.put(room.getSessionId(), gameState);
 
@@ -251,11 +267,15 @@ public class GameServiceMultiplayer {
 
 
     public String findWaitingGame() {
-        return gameRooms.values().stream()
+        String result= gameRooms.values().stream()
             .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER"))
             .map(GameRoom::getSessionId)
             .findFirst()
             .orElse(null);
+        System.out.println("GameRooms: "+ gameRooms.values());
+        System.out.println("Result: "+result);
+        return result;
+
     }
 
     /**
