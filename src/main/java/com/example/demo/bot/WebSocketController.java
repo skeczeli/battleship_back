@@ -2,20 +2,31 @@
 package com.example.demo.bot;
 
 import com.example.demo.bot.dto.ShotDTO;
+import com.example.demo.game.GameSession;
+import com.example.demo.game.GameSessionRepository;
+import com.example.demo.user.User;
+import com.example.demo.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Controller
 public class WebSocketController {
 
     private final GameServiceBot gameServiceBot;
     private final SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private GameSessionRepository gameSessionRepository;
 
     @Autowired
     public WebSocketController(GameServiceBot gameService, SimpMessagingTemplate messagingTemplate) {
@@ -91,6 +102,12 @@ public class WebSocketController {
             gameAbandonedMessage.put("type", "GAME_ABANDONED");
             gameAbandonedMessage.put("playerId", playerId);
             gameAbandonedMessage.put("message", "El jugador ha abandonado la partida");
+
+            updateUserStats(playerId);
+            GameSession gs = gameSessionRepository.findBySessionId(sessionId);
+            gs.setEndedAt(LocalDateTime.now());
+            gs.setWinner("BOT");
+            gameSessionRepository.saveAndFlush(gs);
             
             // Enviar mensaje de que el juego ha sido abandonado
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, gameAbandonedMessage);
@@ -99,6 +116,21 @@ public class WebSocketController {
             errorResponse.put("type", "ERROR");
             errorResponse.put("error", e.getMessage());
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, errorResponse);
+        }
+    }
+
+    private void updateUserStats(String playerId) {
+        // Solo actualizar si no es un invitado
+        if (playerId != null && !playerId.startsWith("guest")) {
+            // Buscar el usuario por username (asumiendo que playerId es username para usuarios registrados)
+            Optional<User> userOpt = userRepository.findByUsername(playerId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setLosses(user.getLosses() + 1);
+                userRepository.save(user);
+                System.out.println("Estadísticas actualizadas para " + playerId +
+                        " - Wins: " + user.getWins() + ", Losses: " + user.getLosses());
+            }
         }
     }
 
