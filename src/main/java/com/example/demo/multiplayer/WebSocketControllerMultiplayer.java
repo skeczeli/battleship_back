@@ -2,17 +2,23 @@
 package com.example.demo.multiplayer;
 
 import com.example.demo.bot.dto.ShotDTO;
+import com.example.demo.game.GameSession;
+import com.example.demo.game.GameSessionRepository;
 import com.example.demo.game.GameState;
 
+import com.example.demo.user.User;
+import com.example.demo.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Controller
 public class WebSocketControllerMultiplayer {
@@ -21,12 +27,17 @@ public class WebSocketControllerMultiplayer {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    GameSessionRepository gameSessionRepository;
+
+    @Autowired
     public WebSocketControllerMultiplayer(SimpMessagingTemplate messagingTemplate, GameServiceMultiplayer gameServiceMultiplayer) {
         this.gameServiceMultiplayer = gameServiceMultiplayer;
         this.messagingTemplate = messagingTemplate;
     }
 
-    
     @MessageMapping("/game/multiplayer/{sessionId}/join")
     public void joinGame(@DestinationVariable String sessionId, Map<String, Object> joinData) {
         String playerId = (String) joinData.get("playerId");
@@ -92,6 +103,7 @@ public class WebSocketControllerMultiplayer {
             if (gameOver) {
                 result.put("gameOver", true);
                 result.put("winner", playerId);
+                saveEndedGame(sessionId, playerId, false);
             } else {
                 // Enviar el resultado al cliente
                 result.put("gameOver", false);
@@ -112,18 +124,14 @@ public class WebSocketControllerMultiplayer {
     public void abandonGame(@DestinationVariable String sessionId, Map<String, Object> abandonData) {
         try {
             String playerId = (String) abandonData.get("playerId");
-            
-            // Aquí podrías realizar alguna limpieza, como:
-            // - Marcar el juego como abandonado
-            // - Liberar recursos
-            // - Registrar estadísticas, etc.
-            
-            // Crear mensaje de juego abandonado
+
             Map<String, Object> gameAbandonedMessage = new HashMap<>();
             gameAbandonedMessage.put("type", "GAME_ABANDONED");
             gameAbandonedMessage.put("playerId", playerId);
             gameAbandonedMessage.put("message", "El jugador ha abandonado la partida");
-            
+
+            saveEndedGame(sessionId, playerId, true);
+
             // Enviar mensaje de que el juego ha sido abandonado
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, gameAbandonedMessage);
         } catch (Exception e) {
@@ -132,6 +140,59 @@ public class WebSocketControllerMultiplayer {
             errorResponse.put("error", e.getMessage());
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, errorResponse);
         }
-    }  
+    }
+
+    private void saveEndedGame(String sessionId, String playerId, boolean isLoser) {
+        GameSession gs = gameSessionRepository.findBySessionId(sessionId);
+
+        String playerOneId = gs.getPlayerOneId();
+        String playerTwoId = gs.getPlayerTwoId();
+
+        String loserId = isLoser ? playerId :
+                (playerId.equals(playerOneId) ? playerTwoId : playerOneId);
+
+        String winnerId = loserId.equals(playerOneId) ? playerTwoId : playerOneId;
+
+        updateUserStats(loserId, playerOneId, playerTwoId);
+        gs.setEndedAt(LocalDateTime.now());
+        gs.setWinner(winnerId);
+        gameSessionRepository.saveAndFlush(gs);
+    }
+
+
+    private void updateUserStats(String loserId, String playerOneId, String playerTwoId) {
+        boolean playerOneIsBailer = loserId.equals(playerOneId);
+        updatePlayerStats(playerOneId, playerOneIsBailer);
+        updatePlayerStats(playerTwoId, !playerOneIsBailer);
+    }
+
+    private void updatePlayerStats(String playerId, boolean playerIsBailer) {
+        if (isNotGuest(playerId)) {
+            Optional<User> userOpt = userRepository.findByUsername(playerId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                if (playerIsBailer) {
+                    updateLoss(user);
+                } else {
+                    updateWin(user);
+                }
+                userRepository.save(user);
+                System.out.println("Estadísticas actualizadas para " + playerId +
+                        " - Wins: " + user.getWins() + ", Losses: " + user.getLosses());
+            }
+        }
+    }
+
+    private static void updateLoss(User user) {
+        user.setLosses(user.getLosses() + 1);
+    }
+
+    private static void updateWin(User user) {
+        user.setWins(user.getWins() + 1);
+    }
+
+    private static boolean isNotGuest(String playerId) {
+        return playerId != null && !playerId.startsWith("guest");
+    }
 
 }
