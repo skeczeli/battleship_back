@@ -199,11 +199,16 @@ public class GameServiceBot {
     public GameViewDTO resumeGame(String sessionId, String playerId) {
         // Verificar si ya está cargado en memoria
         GameState state = gameStates.get(sessionId);
-
+        if (!state.getPlayerId().equals(playerId)) throw new IllegalArgumentException("Jugador no autorizado para esta partida");
+        System.out.println("Player1Id: " + state.getPlayerId() + ", Player2Id: " + state.getPlayerTwoId() +
+                ", recieved player: " + playerId);
         if (state == null) {
             // Buscar la sesión en la base
             GameSession session = gameSessionRepository.findBySessionId(sessionId);
             if (session == null) throw new IllegalArgumentException("Partida no encontrada");
+
+            System.out.println("Player1Id: " + session.getPlayerOneId() + ", Player2Id: " + session.getPlayerTwoId() +
+                     ", recieved player: " + playerId);
 
             if (!session.getPlayerOneId().equals(playerId)) throw new IllegalArgumentException("Jugador no autorizado para esta partida");
 

@@ -47,19 +47,26 @@ public class GameControllerBot {
             @PathVariable String sessionId,
             @PathVariable String playerId
     ) {
-        GameViewDTO gameView = gameServiceBot.resumeGame(sessionId, playerId);
+        try {
+            GameViewDTO gameView = gameServiceBot.resumeGame(sessionId, playerId);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("playerBoard", gameView.playerBoard());
-        response.put("botBoard", gameView.opponentBoard());
-        response.put("sunkShips", gameView.sunkShips());
-        response.put("lastShot", gameView.lastShot());
-        response.put("gameOver", gameView.gameOver());
-        response.put("winner", gameView.winner());
-        response.put("turn", gameView.turn());
-        response.put("shotHistory", gameView.history());
+            Map<String, Object> response = new HashMap<>();
+            response.put("playerBoard", gameView.playerBoard());
+            response.put("botBoard", gameView.opponentBoard());
+            response.put("sunkShips", gameView.sunkShips());
+            response.put("lastShot", gameView.lastShot());
+            response.put("gameOver", gameView.gameOver());
+            response.put("winner", gameView.winner());
+            response.put("turn", gameView.turn());
+            response.put("shotHistory", gameView.history());
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("status", "bad_request");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
 

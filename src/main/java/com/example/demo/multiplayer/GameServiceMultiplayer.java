@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,7 +94,7 @@ public class GameServiceMultiplayer {
             session.setPlayerTwoId(playerId);
             session.setPlayerTwoBoardJson(playerBoardJson);
             session.setStartedAt(LocalDateTime.now());
-            gameSessionRepository.save(session);
+            gameSessionRepository.saveAndFlush(session);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             return false;
@@ -223,64 +224,63 @@ public class GameServiceMultiplayer {
 
 
     public GameViewDTO resumeGame(String sessionId, String playerId) {
-    // Verificar si ya está cargado en memoria
-    GameState state = gameStates.get(sessionId);
-    if (state == null) {
-        // Buscar la sesión en la base
+        // Verificar si ya está cargado en memoria
+        GameState state = gameStates.get(sessionId);
         GameSession session = gameSessionRepository.findBySessionId(sessionId);
-        if (session == null) throw new IllegalArgumentException("Partida no encontrada");
 
         String playerOneId = session.getPlayerOneId();
         String playerTwoId = session.getPlayerTwoId();
 
-        if (!playerOneId.equals(playerId) && !playerTwoId.equals(playerId)) {
+        if (!playerOneId.equals(playerId) && !Objects.equals(playerTwoId, playerId)) {
             throw new IllegalArgumentException("Jugador no autorizado para esta partida");
         }
 
-        boolean isPlayerOne = playerId.equals(playerOneId);
-        String enemyId = isPlayerOne ? playerTwoId : playerOneId;
+        if (state == null) {
+            // Buscar la sesión en la base
+            if (session == null) throw new IllegalArgumentException("Partida no encontrada");
 
-        // Validar que ambos jugadores hayan colocado tablero
-        if (session.getPlayerBoardJson() == null || session.getPlayerTwoBoardJson() == null) {
-            throw new IllegalStateException("Esperando que ambos jugadores coloquen sus tableros.");
-        }
-
-        // Parsear tableros
-        List<List<Integer>> board1;
-        List<List<Integer>> board2;
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            board1 = mapper.readValue(session.getPlayerBoardJson(), List.class);
-            board2 = mapper.readValue(session.getPlayerTwoBoardJson(), List.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error deserializando los tableros", e);
-        }
-
-        List<Shot> shots = shotRepository.findAll().stream()
-                .filter(s -> s.getSessionId().equals(sessionId))
-                .toList();
-
-        long shotsP1 = shots.stream().filter(s -> s.getPlayerId().equals(playerOneId)).count();
-        long shotsP2 = shots.stream().filter(s -> s.getPlayerId().equals(playerTwoId)).count();
-        String nextTurn = (shotsP1 <= shotsP2) ? playerOneId : playerTwoId;
-
-
-        // Crear estado
-        state = new GameState(board1, board2, playerOneId, playerTwoId, nextTurn, null);
-
-        // Disparos
-        for (Shot shot : shots) {
-            if (shot.isBot()) {
-                state.getplayerTwoShots()[shot.getRow()][shot.getCol()] = true;
-            } else {
-                state.getPlayerShots()[shot.getRow()][shot.getCol()] = true;
+            // Validar que ambos jugadores hayan colocado tablero
+            if (session.getPlayerBoardJson() == null || session.getPlayerTwoBoardJson() == null) {
+                throw new IllegalStateException("Esperando que ambos jugadores coloquen sus tableros.");
             }
+
+            // Parsear tableros
+            List<List<Integer>> board1;
+            List<List<Integer>> board2;
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                board1 = mapper.readValue(session.getPlayerBoardJson(), List.class);
+                board2 = mapper.readValue(session.getPlayerTwoBoardJson(), List.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Error deserializando los tableros", e);
+            }
+
+            List<Shot> shots = shotRepository.findAll().stream()
+                    .filter(s -> s.getSessionId().equals(sessionId))
+                    .toList();
+
+            long shotsP1 = shots.stream().filter(s -> s.getPlayerId().equals(playerOneId)).count();
+            long shotsP2 = shots.stream().filter(s -> s.getPlayerId().equals(playerTwoId)).count();
+            String nextTurn = (shotsP1 <= shotsP2) ? playerOneId : playerTwoId;
+
+
+            // Crear estado
+            state = new GameState(board1, board2, playerOneId, playerTwoId, nextTurn, null);
+
+            // Disparos
+            for (Shot shot : shots) {
+                if (shot.isBot()) {
+                    state.getplayerTwoShots()[shot.getRow()][shot.getCol()] = true;
+                } else {
+                    state.getPlayerShots()[shot.getRow()][shot.getCol()] = true;
+                }
+            }
+
+            gameStates.put(sessionId, state);
         }
 
-        gameStates.put(sessionId, state);
-        }
 
-        GameSession session = gameSessionRepository.findBySessionId(sessionId);
+
         List<Shot> allShots = shotRepository.findAll();
 
         return GameViewService.toView(session, state, allShots, playerId);

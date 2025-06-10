@@ -76,7 +76,13 @@ public class GameControllerMultiplayer {
             Map<String, Object> waiting = new HashMap<>();
             waiting.put("status", "WAITING_FOR_OPPONENT");
             return ResponseEntity.ok(waiting);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e){
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "bad_request");
+            return ResponseEntity.badRequest().body(error);
+        }
+        catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
