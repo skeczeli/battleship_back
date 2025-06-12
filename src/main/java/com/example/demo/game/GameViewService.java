@@ -17,8 +17,8 @@ public class GameViewService {
         boolean[][] shotsReceived = isPlayerOne ? state.getplayerTwoShots() : state.getPlayerShots(); // lo que me pegaron
         boolean[][] shotsFired = isPlayerOne ? state.getPlayerShots() : state.getplayerTwoShots();     // lo que tiré
 
-        List<List<Integer>> playerBoard = applyShotsToPlayerBoard(rawPlayerBoard, shotsReceived);
-        List<List<String>> opponentBoard = generateOpponentView(shotsFired, allShots, sessionId, playerId);
+        List<List<Integer>> playerBoard = applyShotsToPlayerBoard(rawPlayerBoard, shotsReceived, state.getPlayerBoard().size());
+        List<List<String>> opponentBoard = generateOpponentView(shotsFired, allShots, sessionId, playerId, state.getPlayerBoard().size());
 
         List<Integer> sunkOpponentShips = detectSunkShips(allShots, sessionId, playerId, isPlayerOne ? state.getEnemyBoard() : state.getPlayerBoard());
         List<Integer> sunkPlayerShips = detectSunkShips(allShots, sessionId, playerId.equals(session.getPlayerOneId()) ? session.getPlayerTwoId() : session.getPlayerOneId(), rawPlayerBoard);
@@ -38,11 +38,11 @@ public class GameViewService {
         return new GameViewDTO(playerBoard, opponentBoard, sunkShips, lastShot, gameOver, winner, turn, history);
     }
 
-    private static List<List<Integer>> applyShotsToPlayerBoard(List<List<Integer>> board, boolean[][] botShots) {
+    private static List<List<Integer>> applyShotsToPlayerBoard(List<List<Integer>> board, boolean[][] botShots, int boardSize) {
         List<List<Integer>> result = new ArrayList<>();
-        for (int row = 0; row < 10; row++) {
+        for (int row = 0; row < boardSize; row++) {
             List<Integer> line = new ArrayList<>();
-            for (int col = 0; col < 10; col++) {
+            for (int col = 0; col < boardSize; col++) {
                 Integer value = board.get(row).get(col);
                 if (botShots[row][col]) {
                     line.add(value != null ? -Math.abs(value) : 0); // negativo = impactado, 0 = miss
@@ -55,9 +55,9 @@ public class GameViewService {
         return result;
     }
 
-    private static List<List<String>> generateOpponentView(boolean[][] shots, List<Shot> allShots, String sessionId, String playerId) {
+    private static List<List<String>> generateOpponentView(boolean[][] shots, List<Shot> allShots, String sessionId, String playerId, int boardSize) {
         List<List<String>> result = new ArrayList<>();
-        for (int i = 0; i < 10; i++) result.add(new ArrayList<>(Collections.nCopies(10, null)));
+        for (int i = 0; i < boardSize; i++) result.add(new ArrayList<>(Collections.nCopies(boardSize, null)));
 
         for (Shot shot : allShots) {
             if (!shot.getSessionId().equals(sessionId)) continue;

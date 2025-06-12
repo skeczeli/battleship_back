@@ -9,6 +9,7 @@ public class GameRoom {
     private List<List<Integer>> player1Board;
     private List<List<Integer>> player2Board;
     private String status; // "WAITING_FOR_PLAYER", "IN_PROGRESS"
+    private int boardSize;
 
     public String getSessionId() {
         return sessionId;
@@ -52,4 +53,11 @@ public class GameRoom {
         return sessionId;
     }
     
+    public int getBoardSize() {
+        return boardSize;
+    }
+
+    public void setBoardSize(int boardSize) {
+        this.boardSize = boardSize;
+    }
 }

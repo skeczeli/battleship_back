@@ -13,8 +13,9 @@ public class GameState {
     private String playerTurn;
 
     public  GameState(List<List<Integer>> playerBoard, List<List<Integer>> EnemyBoard, String playerId, String playertwoId, String botType) {
-        playerShots = new boolean[10][10];
-        playerTwoShots = new boolean[10][10];
+        int size = playerBoard.size();
+        playerShots = new boolean[size][size];
+        playerTwoShots = new boolean[size][size];
         this.playerBoard = playerBoard;
         this.EnemyBoard = EnemyBoard;
         this.playerId = playerId;
@@ -30,8 +31,9 @@ public class GameState {
         this.playerId = playerId;
         this.playerTwoId = playerTwoId;
         this.botType = (botType == null) ? "simple" : botType;
-        this.playerShots = new boolean[10][10];
-        this.playerTwoShots = new boolean[10][10];
+        int size = playerBoard.size();
+        playerShots = new boolean[size][size];
+        playerTwoShots = new boolean[size][size];
         this.playerTurn = startingTurn;
     }
 

@@ -9,13 +9,33 @@ import java.util.Random;
 
 public abstract class AbstractBot implements BotStrategy {
 
-    protected static final int BOARD_SIZE = 10;
+    protected final int BOARD_SIZE;
     protected static final Random random = new Random();
 
     //Barcos {ID, Tamaño}
-    protected static final int[][] SHIPS = {
+    protected static final int[][] SHIPS_6 = {
+    {1, 4}, {2, 3}, {3, 2}
+    };
+    protected static final int[][] SHIPS_10 = {
         {1, 5}, {2, 4}, {3, 3}, {4, 3}, {5, 2}
     };
+    protected static final int[][] SHIPS_14 = {
+        {1, 5}, {2, 5}, {3, 4}, {4, 3}, {5, 3}, {6, 3}, {7, 2}
+    };
+
+    protected  final int[][] SHIPS;
+
+
+    public AbstractBot(int BOARD_SIZE) {
+        this.BOARD_SIZE = BOARD_SIZE;
+        if (BOARD_SIZE == 6) {
+            SHIPS = SHIPS_6;
+        } else if (BOARD_SIZE == 10) {
+            SHIPS = SHIPS_10;
+        } else {
+            SHIPS = SHIPS_14;
+        }
+}
 
 
     /**

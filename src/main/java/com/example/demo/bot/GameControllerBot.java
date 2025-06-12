@@ -1,13 +1,11 @@
 package com.example.demo.bot;
 
 import com.example.demo.bot.dto.GameViewDTO;
-import com.example.demo.shot.Shot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +32,9 @@ public class GameControllerBot {
         // Extraer el tablero del jugador y el ID del jugador del cuerpo de la solicitud
         List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
         String playerId = (String) setupData.get("playerId");
-        String difficulty = (String) setupData.getOrDefault("difficulty", "simple");
-        
+        String difficulty = (String) setupData.get("difficulty");
+
+
         // Iniciar el juego y obtener el ID de sesión
         String sessionId = gameServiceBot.startGame(playerBoard, playerId, difficulty);
         

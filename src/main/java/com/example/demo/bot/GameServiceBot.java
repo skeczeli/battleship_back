@@ -16,7 +16,6 @@ import com.example.demo.user.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -32,26 +31,24 @@ import java.util.List;
 @Service
 public class GameServiceBot {
 
-    private final BotStrategy  simpleBot;
-    private final BotStrategy  intelligentBot;
+    private final BotConfig botConfig;
     private final ShotRepository shotRepository;
     private final GameSessionRepository gameSessionRepository;
 
     // Mapas para almacenar el estado del juego por sesión
     private final Map<String, GameState> gameStates = new HashMap<>();
+    private final Map<String, BotStrategy> botInstances = new HashMap<>();
 
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     public GameServiceBot(
-            @Qualifier("simpleBot") BotStrategy  simpleBot,
-            @Qualifier("intelligentBot") BotStrategy  intelligentBot, //mmm como funciona para tener uno solo?
             ShotRepository shotRepository,
-            GameSessionRepository gameSessionRepository
+            GameSessionRepository gameSessionRepository,
+            BotConfig botConfig
     ) {
-        this.simpleBot = simpleBot;
-        this.intelligentBot = intelligentBot;
+        this.botConfig = botConfig;
         this.shotRepository = shotRepository;
         this.gameSessionRepository = gameSessionRepository;
     }
@@ -64,8 +61,8 @@ public class GameServiceBot {
         // Generar ID único para la sesión
         String sessionId = UUID.randomUUID().toString();
 
-        BotStrategy bot = botType.equals("intelligent") ? intelligentBot : simpleBot;
-
+        int boardSize = playerBoard.size();
+        BotStrategy bot = botConfig.createBot(botType, boardSize);
         List<List<Integer>> botBoard = bot.generateRandomBoard();
 
         GameState gameState = new GameState(playerBoard, botBoard, playerId, "BOT", botType);
@@ -96,6 +93,7 @@ public class GameServiceBot {
 
         int row = shotDTO.getRow();
         int col = shotDTO.getCol();
+        System.out.println("Dificultad recibida: " + gameState.getBotType());
 
         if (gameState.getPlayerShots()[row][col]) {
             throw new IllegalStateException("Ya has disparado en esta posición");
@@ -140,7 +138,13 @@ public class GameServiceBot {
         }
 
         // Turno del bot, procesar su disparo
-        BotStrategy bot = gameState.getBotType().equalsIgnoreCase("intelligent") ? intelligentBot : simpleBot;
+        int boardSize = gameState.getPlayerBoard().size();
+        String botType = gameState.getBotType();
+        BotStrategy bot = botInstances.computeIfAbsent(
+            sessionId,
+            id -> botConfig.createBot(botType, boardSize)
+        );
+        
         ShotResultDTO botShotDTO = bot.processBotShot(gameState);
         response.put("botShotResult", botShotDTO.getResult());
         response.put("botShotRow", botShotDTO.getRow());
@@ -251,15 +255,15 @@ public class GameServiceBot {
     }
 
     private boolean checkForVictory(List<List<Integer>> board, boolean[][] shots) {
-        for (int i = 0; i < 10; i++)
-            for (int j = 0; j < 10; j++)
+        for (int i = 0; i < board.size(); i++)
+            for (int j = 0; j < board.size(); j++)
                 if (board.get(i).get(j) != null && !shots[i][j]) return false;
         return true;
     }
 
     private boolean isShipSunk(List<List<Integer>> board, boolean[][] shots, int shipId) {
-        for (int i = 0; i < 10; i++)
-            for (int j = 0; j < 10; j++)
+        for (int i = 0; i < board.size(); i++)
+            for (int j = 0; j < board.size(); j++)
                 if (board.get(i).get(j) != null && board.get(i).get(j).equals(shipId) && !shots[i][j]) return false;
         return true;
     }

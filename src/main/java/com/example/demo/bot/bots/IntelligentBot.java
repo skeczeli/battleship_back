@@ -20,6 +20,10 @@ public class IntelligentBot extends AbstractBot {
             {0, 1}   // derecha
     };
 
+    public IntelligentBot(int BOARD_SIZE) {
+        super(BOARD_SIZE);
+    }
+
     @Override
     public ShotResultDTO processBotShot(GameState gameState) {
         int row, col;

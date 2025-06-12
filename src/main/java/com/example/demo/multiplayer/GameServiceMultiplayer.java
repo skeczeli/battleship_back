@@ -43,13 +43,14 @@ public class GameServiceMultiplayer {
     }
 
     // Crear una sala de espera
-    public String createGameRoom(List<List<Integer>> playerBoard, String playerId) throws JsonProcessingException {
+    public String createGameRoom(List<List<Integer>> playerBoard, String playerId, int boardSize) throws JsonProcessingException {
         String sessionId = UUID.randomUUID().toString();
         
         GameRoom room = new GameRoom();
         room.setSessionId(sessionId);
         room.setPlayer1Id(playerId);
         room.setPlayer1Board(playerBoard);
+        room.setBoardSize(boardSize);
         room.setStatus("WAITING_FOR_PLAYER");
 
         gameRooms.put(sessionId, room);
@@ -70,13 +71,13 @@ public class GameServiceMultiplayer {
     // Un jugador se une a la sala
     public boolean joinGameRoom(String sessionId, List<List<Integer>> playerBoard, String playerId) {
         GameRoom room = gameRooms.get(sessionId);
-        System.out.println("room id: "+room);
-        if (room == null || !room.getStatus().equals("WAITING_FOR_PLAYER")) {
+        System.out.println("room id: "+ room);
+        if (room == null || !room.getStatus().equals("WAITING_FOR_PLAYER") || room.getBoardSize() != playerBoard.size()) {
             return false;
         }
 
-        System.out.println("p1: "+room.getPlayer1Id());
-        System.out.println("p2: "+playerId);
+        System.out.println("p1: "+ room.getPlayer1Id());
+        System.out.println("p2: "+ playerId);
 
         room.setPlayer2Id(playerId);
         room.setPlayer2Board(playerBoard);
@@ -181,8 +182,8 @@ public class GameServiceMultiplayer {
             
             // Verificar si el barco está hundido
             boolean allHit = true;
-            for (int i = 0; i < 10; i++) {
-                for (int j = 0; j < 10; j++) {
+            for (int i = 0; i < gameState.getPlayerBoard().size(); i++) {
+                for (int j = 0; j < gameState.getPlayerBoard().size(); j++) {
                     if (targetBoard.get(i).get(j) != null && 
                         targetBoard.get(i).get(j).equals(shipId) && 
                         !playerShots[i][j]) {
@@ -288,24 +289,23 @@ public class GameServiceMultiplayer {
 
 
 
-    public String findWaitingGame() {
-        String result= gameRooms.values().stream()
-            .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER"))
+    public String findWaitingGame(int boardSize) {
+        String result = gameRooms.values().stream()
+            .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER") && room.getBoardSize() == boardSize)
             .map(GameRoom::getSessionId)
             .findFirst()
             .orElse(null);
-        System.out.println("GameRooms: "+ gameRooms.values());
-        System.out.println("Result: "+result);
+        System.out.println("GameRooms: " + gameRooms.values());
+        System.out.println("Result: " + result);
         return result;
-
     }
 
     /**
      * Verifica si hay victoria (todos los barcos hundidos).
      */
     private boolean checkForVictory(List<List<Integer>> board, boolean[][] shots) {
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
+        for (int i = 0; i < board.size(); i++) {
+            for (int j = 0; j < board.size(); j++) {
                 if (board.get(i).get(j) != null && !shots[i][j]) {
                     // Hay al menos una celda de barco que no ha sido disparada
                     return false;

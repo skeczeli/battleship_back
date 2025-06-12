@@ -9,6 +9,10 @@ import com.example.demo.game.GameState;
  */
 public class SimpleBot extends AbstractBot {
 
+    public SimpleBot(int BOARD_SIZE) {
+        super(BOARD_SIZE);
+    }
+
     @Override
     public ShotResultDTO processBotShot(GameState gameState) {
         int[] pos = getRandomUnshotCell(gameState);

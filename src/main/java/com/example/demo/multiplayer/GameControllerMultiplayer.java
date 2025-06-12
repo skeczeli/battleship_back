@@ -36,14 +36,16 @@ public class GameControllerMultiplayer {
         String playerId = (String) setupData.get("playerId");
         String sessionId;
 
-        sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId);
+        int boardSize = playerBoard.size();
+
+        sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId, boardSize);
         return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
     }
         
 
     @GetMapping("/waiting")
-    public Map<String, String> findWaitingGame() {
-        String sessionId = gameServiceMultiplayer.findWaitingGame();
+    public Map<String, String> findWaitingGame(@RequestParam int boardSize) {
+        String sessionId = gameServiceMultiplayer.findWaitingGame(boardSize);
         if (sessionId != null) {
             return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
         } else {
