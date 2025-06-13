@@ -10,6 +10,8 @@ public class GameRoom {
     private List<List<Integer>> player2Board;
     private String status; // "WAITING_FOR_PLAYER", "IN_PROGRESS"
     private int boardSize;
+    private boolean matchByLevel;
+    private int level;
 
     public String getSessionId() {
         return sessionId;
@@ -46,6 +48,18 @@ public class GameRoom {
     }
     public void setStatus(String status) {
         this.status = status;
+    }
+    public boolean getMatchByLevel() {
+        return matchByLevel;
+    }
+    public void setMatchByLevel(boolean match) {
+        this.matchByLevel = match;
+    }
+    public int getLevel() {
+        return level;
+    }
+    public void setLevel(int level) {
+        this.level = level;
     }
 
     @Override

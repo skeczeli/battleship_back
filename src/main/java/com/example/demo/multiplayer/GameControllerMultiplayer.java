@@ -32,20 +32,24 @@ public class GameControllerMultiplayer {
 
     @PostMapping("/setup/multiplayer")
     public Map<String, String> CreateGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
+        System.out.println("Payload recibido: " + setupData);
+        System.out.println("matchByLevel recibido: " + setupData.get("matchByLevel"));
         List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
         String playerId = (String) setupData.get("playerId");
+        boolean matchByLevel = ((String) setupData.get("matchByLevel")).equals("true");
         String sessionId;
 
         int boardSize = playerBoard.size();
 
-        sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId, boardSize);
+        sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId, boardSize, matchByLevel);
         return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
     }
         
 
     @GetMapping("/waiting")
-    public Map<String, String> findWaitingGame(@RequestParam int boardSize) {
-        String sessionId = gameServiceMultiplayer.findWaitingGame(boardSize);
+    public Map<String, String> findWaitingGame(
+            @RequestParam int boardSize, @RequestParam boolean matchByLevel, @RequestParam String playerId) {
+        String sessionId = gameServiceMultiplayer.findWaitingGame(boardSize, matchByLevel, playerId);
         if (sessionId != null) {
             return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
         } else {

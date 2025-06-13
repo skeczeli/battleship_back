@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.example.demo.ranking.RankingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,9 @@ public class GameServiceMultiplayer {
     private final Map<String, GameRoom> gameRooms = new HashMap<>(); //"sala de espera"
 
     @Autowired
+    private RankingService rankingService;
+
+    @Autowired
     public GameServiceMultiplayer(ShotRepository shotRepository, GameSessionRepository gameSessionRepository) {
         this.shotRepository = shotRepository;
         this.gameSessionRepository = gameSessionRepository;
@@ -42,8 +46,16 @@ public class GameServiceMultiplayer {
         return gameStates.get(sessionId);
     }
 
+    private int getLevelFromScore(int score) {
+        if (score >= 1000) return 5;
+        if (score >= 700)  return 4;
+        if (score >= 400)  return 3;
+        if (score >= 100)  return 2;
+        return 1;
+    }
+
     // Crear una sala de espera
-    public String createGameRoom(List<List<Integer>> playerBoard, String playerId, int boardSize) throws JsonProcessingException {
+    public String createGameRoom(List<List<Integer>> playerBoard, String playerId, int boardSize, boolean matchByLevel) throws JsonProcessingException {
         String sessionId = UUID.randomUUID().toString();
         
         GameRoom room = new GameRoom();
@@ -51,7 +63,15 @@ public class GameServiceMultiplayer {
         room.setPlayer1Id(playerId);
         room.setPlayer1Board(playerBoard);
         room.setBoardSize(boardSize);
+        room.setMatchByLevel(matchByLevel);
+        int playerLevel = rankingService.getScoreIfExists(playerId)
+                .map(this::getLevelFromScore)
+                .orElse(1);
+        room.setLevel(playerLevel);
+
         room.setStatus("WAITING_FOR_PLAYER");
+
+        System.out.println("Creating game room.. matchByLevel: " + matchByLevel);
 
         gameRooms.put(sessionId, room);
 
@@ -82,7 +102,9 @@ public class GameServiceMultiplayer {
         room.setPlayer2Id(playerId);
         room.setPlayer2Board(playerBoard);
         room.setStatus("IN_PROGRESS");
-        
+
+        System.out.println("Room matchByLevel: " + room.getMatchByLevel());
+        System.out.println("Room level: " + room.getLevel());
         // Ahora podemos crear el GameState
         startGame(room);
 
@@ -289,9 +311,14 @@ public class GameServiceMultiplayer {
 
 
 
-    public String findWaitingGame(int boardSize) {
+    public String findWaitingGame(int boardSize, boolean matchByLevel, String playerId) {
+        int playerLevel = rankingService.getScoreIfExists(playerId)
+                .map(this::getLevelFromScore)
+                .orElse(1);
         String result = gameRooms.values().stream()
-            .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER") && room.getBoardSize() == boardSize)
+            .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER")
+                    && room.getBoardSize() == boardSize
+                    && isMatchAllowed(room, matchByLevel, playerLevel))
             .map(GameRoom::getSessionId)
             .findFirst()
             .orElse(null);
@@ -299,6 +326,22 @@ public class GameServiceMultiplayer {
         System.out.println("Result: " + result);
         return result;
     }
+
+    private boolean isMatchAllowed(GameRoom room, boolean matchByLevel, int playerLevel) {
+        boolean roomWantsLevel = room.getMatchByLevel();
+        boolean playerWantsLevel = matchByLevel;
+        boolean levelsMatch = room.getLevel() == playerLevel;
+
+        System.out.println("room wants level: " + roomWantsLevel);
+        System.out.println("player wants level: " + matchByLevel);
+        System.out.println("room level: " + room.getLevel());
+        System.out.println("player level: " + playerLevel);
+        System.out.println("levels match: " + levelsMatch);
+
+        if (!roomWantsLevel && !playerWantsLevel) return true;
+        return levelsMatch;
+    }
+
 
     /**
      * Verifica si hay victoria (todos los barcos hundidos).

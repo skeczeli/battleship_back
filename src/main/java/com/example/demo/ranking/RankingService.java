@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,5 +35,13 @@ public class RankingService {
 
         return ranking;
     }
+
+    public Optional<Integer> getScoreIfExists(String username) {
+        return getRanking().stream()
+                .filter(p -> p.getUsername().equals(username))
+                .map(PlayerRankingDTO::getScore)
+                .findFirst();
+    }
+
 }
 
