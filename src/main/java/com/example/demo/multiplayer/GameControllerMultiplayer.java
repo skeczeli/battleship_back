@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,12 +16,12 @@ import java.util.Map;
 @RequestMapping("/api/game")
 @CrossOrigin(origins = "http://localhost:3000")
 public class GameControllerMultiplayer {
-    
+
     SimpMessagingTemplate simpMessagingTemplate;
     private final GameServiceMultiplayer gameServiceMultiplayer;
     
     @Autowired
-    public GameControllerMultiplayer(GameServiceMultiplayer gameServiceMultiplayer, SimpMessagingTemplate simpMessagingTemplate) {
+    public GameControllerMultiplayer(GameServiceMultiplayer gameServiceMultiplayer, SimpMessagingTemplate simpMessagingTemplate, ChatRepository chatRepository) {
         this.gameServiceMultiplayer = gameServiceMultiplayer;
         this.simpMessagingTemplate = simpMessagingTemplate;
     }
@@ -29,6 +30,8 @@ public class GameControllerMultiplayer {
         return gameServiceMultiplayer;
     }
 
+    @Autowired
+    ChatRepository chatRepository;
 
     @PostMapping("/setup/multiplayer")
     public Map<String, String> CreateGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
@@ -66,6 +69,17 @@ public class GameControllerMultiplayer {
         System.out.println("HOLA: " + sessionId + ":" + playerId);
         try {
             GameViewDTO gameView = gameServiceMultiplayer.resumeGame(sessionId, playerId);
+            List<ChatMessage> chatMessageList = chatRepository.findBySessionId(sessionId);
+
+            List<Map<String, Object>> chatMessages = chatMessageList.stream().map(msg -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", msg.getId());
+                m.put("text", msg.getMessage());
+                m.put("sender", msg.getSenderId().equals(playerId) ? "me" : "opponent");
+                m.put("senderName", msg.getSenderId().equals(playerId) ? "Tú" : "Oponente");
+                m.put("timestamp", msg.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm")));
+                return m;
+            }).toList();
 
             Map<String, Object> response = new HashMap<>();
             response.put("playerBoard", gameView.playerBoard());
@@ -75,6 +89,8 @@ public class GameControllerMultiplayer {
             response.put("gameOver", gameView.gameOver());
             response.put("winner", gameView.winner());
             response.put("turn", gameView.turn());
+            response.put("shotHistory", gameView.history());
+            response.put("chatMessages", chatMessages);
 
             return ResponseEntity.ok(response);
         } catch (IllegalStateException e) {

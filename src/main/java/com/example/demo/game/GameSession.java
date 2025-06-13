@@ -26,7 +26,6 @@ public class GameSession {
     @Column(columnDefinition = "TEXT")
     private String playerTwoBoardJson;
 
-
     public GameSession() {}
 
     public GameSession(String sessionId, String playerOneId, String playerTwoId, String playerBoardJson, String playerTwoBoardJson) {
