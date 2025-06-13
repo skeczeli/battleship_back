@@ -47,12 +47,36 @@ public class GameControllerMultiplayer {
         sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId, boardSize, matchByLevel);
         return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
     }
+
+    @PostMapping("/setup/multiplayer/private")
+    public Map<String, String> CreatePrivateGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
+        List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
+        String playerId = (String) setupData.get("playerId");
+        String passkey = ((String) setupData.get("passkey"));
+        String sessionId;
+
+        int boardSize = playerBoard.size();
+
+        sessionId = gameServiceMultiplayer.createGameRoom(playerBoard, playerId, boardSize, passkey);
+        return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
+    }
         
 
     @GetMapping("/waiting")
     public Map<String, String> findWaitingGame(
             @RequestParam int boardSize, @RequestParam boolean matchByLevel, @RequestParam String playerId) {
         String sessionId = gameServiceMultiplayer.findWaitingGame(boardSize, matchByLevel, playerId);
+        if (sessionId != null) {
+            return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
+        } else {
+            return Map.of("gameId", "", "status", "NO_AVAILABLE_GAMES");
+        }
+    }
+
+    @GetMapping("/waiting/private")
+    public Map<String, String> findWaitingGame(
+            @RequestParam int boardSize, @RequestParam String passkey) {
+        String sessionId = gameServiceMultiplayer.findWaitingGame(boardSize, passkey);
         if (sessionId != null) {
             return Map.of("gameId", sessionId, "status", "WAITING_FOR_PLAYER");
         } else {

@@ -88,6 +88,38 @@ public class GameServiceMultiplayer {
         return sessionId;
     }
 
+    public String createGameRoom(List<List<Integer>> playerBoard, String playerId, int boardSize, String passkey) throws JsonProcessingException {
+        String sessionId = UUID.randomUUID().toString();
+
+        GameRoom room = new GameRoom();
+        room.setSessionId(sessionId);
+        room.setPlayer1Id(playerId);
+        room.setPlayer1Board(playerBoard);
+        room.setBoardSize(boardSize);
+        room.setMatchByLevel(false);
+        room.setPasskey(passkey);
+        int playerLevel = rankingService.getScoreIfExists(playerId)
+                .map(this::getLevelFromScore)
+                .orElse(1);
+        room.setLevel(playerLevel);
+
+        room.setStatus("WAITING_FOR_PLAYER");
+
+        gameRooms.put(sessionId, room);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String playerBoardJson = mapper.writeValueAsString(playerBoard);
+
+        GameSession gameSession = new GameSession();
+        gameSession.setSessionId(sessionId);
+        gameSession.setPlayerOneId(playerId);
+        gameSession.setPlayerBoardJson(playerBoardJson);
+
+        gameSessionRepository.save(gameSession);
+
+        return sessionId;
+    }
+
     // Un jugador se une a la sala
     public boolean joinGameRoom(String sessionId, List<List<Integer>> playerBoard, String playerId) {
         GameRoom room = gameRooms.get(sessionId);
@@ -318,10 +350,24 @@ public class GameServiceMultiplayer {
         String result = gameRooms.values().stream()
             .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER")
                     && room.getBoardSize() == boardSize
+                    && passkeyMatches(room, null)
                     && isMatchAllowed(room, matchByLevel, playerLevel))
             .map(GameRoom::getSessionId)
             .findFirst()
             .orElse(null);
+        System.out.println("GameRooms: " + gameRooms.values());
+        System.out.println("Result: " + result);
+        return result;
+    }
+
+    public String findWaitingGame(int boardSize, String passkey) {
+        String result = gameRooms.values().stream()
+                .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER")
+                        && room.getBoardSize() == boardSize
+                        && passkeyMatches(room, passkey))
+                .map(GameRoom::getSessionId)
+                .findFirst()
+                .orElse(null);
         System.out.println("GameRooms: " + gameRooms.values());
         System.out.println("Result: " + result);
         return result;
@@ -340,6 +386,10 @@ public class GameServiceMultiplayer {
 
         if (!roomWantsLevel && !playerWantsLevel) return true;
         return levelsMatch;
+    }
+
+    private boolean passkeyMatches(GameRoom room, String passkey){
+        return Objects.equals(passkey, room.getPasskey());
     }
 
 

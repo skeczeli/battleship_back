@@ -12,6 +12,7 @@ public class GameRoom {
     private int boardSize;
     private boolean matchByLevel;
     private int level;
+    private String passkey = null;
 
     public String getSessionId() {
         return sessionId;
@@ -60,6 +61,13 @@ public class GameRoom {
     }
     public void setLevel(int level) {
         this.level = level;
+    }
+
+    public String getPasskey() {
+        return passkey;
+    }
+    public void setPasskey(String passkey) {
+        this.passkey=passkey;
     }
 
     @Override
