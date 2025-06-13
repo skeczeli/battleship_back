@@ -120,6 +120,63 @@ public class WebSocketControllerMultiplayer {
         }
     }
 
+    // Manejar mensajes de chat
+    @MessageMapping("/game/multiplayer/{sessionId}/chat")
+    public void sendChatMessage(@DestinationVariable String sessionId, Map<String, Object> chatData) {
+        try {
+            String senderId = (String) chatData.get("senderId");
+            String message = (String) chatData.get("message");
+            String gameId = (String) chatData.get("gameId");
+
+            // Validaciones básicas
+            if (senderId == null || message == null || message.trim().isEmpty()) {
+                return; // Ignorar mensajes inválidos
+            }
+
+            // Limitar longitud del mensaje
+            if (message.length() > 200) {
+                message = message.substring(0, 200);
+            }
+
+            // Obtener información del juego para verificar que el jugador pertenece a la partida
+            GameState gameState = gameServiceMultiplayer.getGameState(sessionId);
+            if (gameState == null) {
+                return; // Juego no existe
+            }
+
+            // Verificar que el senderId es uno de los jugadores de la partida
+            String player1 = gameState.getPlayerId();
+            String player2 = gameState.getPlayerTwoId();
+            
+            if (!senderId.equals(player1) && !senderId.equals(player2)) {
+                return; // El jugador no pertenece a esta partida
+            }
+
+            // ⭐ Opcional: Guardar mensaje en base de datos
+            saveChatMessage(sessionId, senderId, message);
+
+            // Crear mensaje de respuesta
+            Map<String, Object> chatMessage = new HashMap<>();
+            chatMessage.put("type", "CHAT_MESSAGE");
+            chatMessage.put("senderId", senderId);
+            chatMessage.put("message", message);
+            chatMessage.put("timestamp", System.currentTimeMillis());
+
+            // Enviar mensaje a todos los jugadores de la partida
+            messagingTemplate.convertAndSend("/topic/game/" + sessionId, chatMessage);
+
+            System.out.println("💬 Chat message sent in game " + sessionId + " by " + senderId + ": " + message);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error sending chat message: " + e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("type", "ERROR");
+            errorResponse.put("error", "Error enviando mensaje de chat");
+            messagingTemplate.convertAndSend("/topic/game/" + sessionId, errorResponse);
+        }
+    }
+
+
     @MessageMapping("/game/multiplayer/{sessionId}/abandon")
     public void abandonGame(@DestinationVariable String sessionId, Map<String, Object> abandonData) {
         try {
@@ -139,6 +196,24 @@ public class WebSocketControllerMultiplayer {
             errorResponse.put("type", "ERROR");
             errorResponse.put("error", e.getMessage());
             messagingTemplate.convertAndSend("/topic/game/" + sessionId, errorResponse);
+        }
+    }
+
+    private void saveChatMessage(String sessionId, String senderId, String message) { //es esto y resume
+        try {
+            // Opción 1: Buscar la GameSession y agregar el mensaje como JSON en un campo de texto
+            GameSession gameSession = gameSessionRepository.findBySessionId(sessionId);
+            if (gameSession != null) {
+                // Por ahora, solo imprimimos en consola
+                // En una implementación completa, podrías tener una tabla ChatMessage separada
+                System.out.println("💾 Saving chat message: [" + sessionId + "] " + senderId + ": " + message);
+                
+                // TODO: Implementar guardado en base de datos si es necesario
+                // Podrías crear una entidad ChatMessage con campos:
+                // - id, gameSessionId, senderId, message, timestamp
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error saving chat message: " + e.getMessage());
         }
     }
 
