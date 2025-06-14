@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,6 +28,9 @@ public class UserController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private FollowRepository followRepository;
+
     @PostMapping("/login")
     @CrossOrigin(origins = "http://localhost:3000", exposedHeaders = "Authorization")
     public ResponseEntity<?> login(@RequestBody UserDTO credentials) {
@@ -40,7 +44,7 @@ public class UserController {
                 UserDTO dto = new UserDTO(
                         user.getUsername(),
                         user.getName(),
-                        user.getPassword(), // o null si no querés mandarlo
+                        null, // No enviar la contraseña por seguridad
                         user.getEmail(),
                         user.getWins(),
                         user.getLosses()
@@ -53,7 +57,6 @@ public class UserController {
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
     }
-
 
     @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping(path="/add")
@@ -78,7 +81,6 @@ public class UserController {
                     .body("Error al registrar el usuario");
         }
     }
-
 
     @PutMapping("/api/users/update")
     @CrossOrigin(origins = "http://localhost:3000")
@@ -123,7 +125,6 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-
     @GetMapping(path="/all")
     public @ResponseBody Iterable<User> getAllUsers() {
         // This returns a JSON or XML with the users
@@ -132,19 +133,48 @@ public class UserController {
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/api/users/{username}")
-    public ResponseEntity<?> getUserByUsername(@org.springframework.web.bind.annotation.PathVariable String username) {
+    public ResponseEntity<?> getUserByUsername(
+            @PathVariable String username,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
+    ) {
         Optional<User> userOpt = userRepository.findByUsername(username);
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            
+            // Obtener estadísticas de seguimiento
+            long followersCount = followRepository.countByFollowing(user);
+            long followingCount = followRepository.countByFollower(user);
+            
+            Boolean isFollowing = null;
+            
+            // Si hay token, verificar si el usuario autenticado sigue a este usuario
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.replace("Bearer ", "");
+                String authenticatedUsername = jwtUtil.validateTokenAndGetUsername(token);
+                
+                if (authenticatedUsername != null && !authenticatedUsername.equals(username)) {
+                    Optional<User> authenticatedUserOpt = userRepository.findByUsername(authenticatedUsername);
+                    if (authenticatedUserOpt.isPresent()) {
+                        isFollowing = followRepository.existsByFollowerAndFollowing(
+                            authenticatedUserOpt.get(), user
+                        );
+                    }
+                }
+            }
+            
             UserDTO dto = new UserDTO(
                 user.getUsername(),
                 user.getName(),
                 null, // no enviamos la contraseña
                 user.getEmail(),
                 user.getWins(),
-                user.getLosses()
+                user.getLosses(),
+                followersCount,
+                followingCount,
+                isFollowing
             );
+            
             return ResponseEntity.ok(dto);
         }
 
@@ -153,17 +183,16 @@ public class UserController {
 
     @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api/delete-account")
-public ResponseEntity<String> deleteAccount(@RequestBody DeleteAccountRequest request) {
-    Optional<User> user = userRepository.findByUsername(
-        request.getUsername()
-    );
+    public ResponseEntity<String> deleteAccount(@RequestBody DeleteAccountRequest request) {
+        Optional<User> user = userRepository.findByUsername(
+            request.getUsername()
+        );
 
-    if (user.isPresent() && user.get().getPassword().equals(request.getPassword())) {
-        userRepository.delete(user.get());
-        return ResponseEntity.ok("Cuenta eliminada correctamente");
-    } else {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario o contraseña incorrectos");
+        if (user.isPresent() && user.get().getPassword().equals(request.getPassword())) {
+            userRepository.delete(user.get());
+            return ResponseEntity.ok("Cuenta eliminada correctamente");
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario o contraseña incorrectos");
+        }
     }
-}
-    
 }
