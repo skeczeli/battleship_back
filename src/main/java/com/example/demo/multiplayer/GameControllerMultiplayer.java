@@ -93,6 +93,8 @@ public class GameControllerMultiplayer {
         System.out.println("HOLA: " + sessionId + ":" + playerId);
         try {
             GameViewDTO gameView = gameServiceMultiplayer.resumeGame(sessionId, playerId);
+            List<List<Integer>> playerBoard = gameView.playerBoard();
+            int boardSize = playerBoard.size();
             List<ChatMessage> chatMessageList = chatRepository.findBySessionId(sessionId);
 
             List<Map<String, Object>> chatMessages = chatMessageList.stream().map(msg -> {
@@ -105,8 +107,12 @@ public class GameControllerMultiplayer {
                 return m;
             }).toList();
 
+            Map<String, Object> gameConfig = new HashMap<>();
+            gameConfig.put("boardSize", boardSize);
+            gameConfig.put("totalShips", getTotalShips(boardSize));
+
             Map<String, Object> response = new HashMap<>();
-            response.put("playerBoard", gameView.playerBoard());
+            response.put("playerBoard", playerBoard);
             response.put("opponentBoard", gameView.opponentBoard());
             response.put("sunkShips", gameView.sunkShips());
             response.put("lastShot", gameView.lastShot());
@@ -115,6 +121,7 @@ public class GameControllerMultiplayer {
             response.put("turn", gameView.turn());
             response.put("shotHistory", gameView.history());
             response.put("chatMessages", chatMessages);
+            response.put("gameConfig", gameConfig);
 
             return ResponseEntity.ok(response);
         } catch (IllegalStateException e) {
@@ -134,6 +141,13 @@ public class GameControllerMultiplayer {
         }
     }
 
-
+    private int getTotalShips(int boardSize) {
+        return switch(boardSize){
+            case 6 -> 3;
+            case 10 -> 5;
+            case 14 -> 7;
+            default -> 0;
+        };
+    }
 
 }

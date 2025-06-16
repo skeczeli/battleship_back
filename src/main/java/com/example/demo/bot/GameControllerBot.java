@@ -49,8 +49,14 @@ public class GameControllerBot {
         try {
             GameViewDTO gameView = gameServiceBot.resumeGame(sessionId, playerId);
 
+            List<List<Integer>> playerBoard = gameView.playerBoard();
+            int boardSize = playerBoard.size();
+            Map<String, Object> gameConfig = new HashMap<>();
+            gameConfig.put("boardSize", boardSize);
+            gameConfig.put("totalShips", getTotalShips(boardSize));
+
             Map<String, Object> response = new HashMap<>();
-            response.put("playerBoard", gameView.playerBoard());
+            response.put("playerBoard", playerBoard);
             response.put("botBoard", gameView.opponentBoard());
             response.put("sunkShips", gameView.sunkShips());
             response.put("lastShot", gameView.lastShot());
@@ -58,6 +64,7 @@ public class GameControllerBot {
             response.put("winner", gameView.winner());
             response.put("turn", gameView.turn());
             response.put("shotHistory", gameView.history());
+            response.put("gameConfig", gameConfig);
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -68,6 +75,13 @@ public class GameControllerBot {
         }
     }
 
-
+    private int getTotalShips(int boardSize) {
+        return switch(boardSize){
+            case 6 -> 3;
+            case 10 -> 5;
+            case 14 -> 7;
+            default -> 0;
+        };
+    }
 
 }
