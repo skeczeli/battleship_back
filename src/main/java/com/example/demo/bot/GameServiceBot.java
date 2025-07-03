@@ -13,6 +13,7 @@ import com.example.demo.shot.Shot;
 import com.example.demo.shot.ShotRepository;
 import com.example.demo.user.User;
 import com.example.demo.user.UserRepository;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
+import java.util.Comparator;
 
 /**
  * Servicio para gestionar el estado del juego y coordinar la lógica.
@@ -180,7 +182,6 @@ public class GameServiceBot {
         return response;
     }
 
-    // todo: should I register abandoned games as losses? ...
     private void updateUserStats(String playerId, boolean won) {
         // Solo actualizar si no es un invitado
         if (playerId != null && !playerId.startsWith("guest")) {
@@ -201,22 +202,21 @@ public class GameServiceBot {
     }
 
     public GameViewDTO resumeGame(String sessionId, String playerId) {
-        // Verificar si ya está cargado en memoria
         GameState state = gameStates.get(sessionId);
-        if (!state.getPlayerId().equals(playerId)) throw new IllegalArgumentException("Jugador no autorizado para esta partida");
-        System.out.println("Player1Id: " + state.getPlayerId() + ", Player2Id: " + state.getPlayerTwoId() +
-                ", recieved player: " + playerId);
+
+        GameSession session;
+
         if (state == null) {
-            // Buscar la sesión en la base
-            GameSession session = gameSessionRepository.findBySessionId(sessionId);
+            // Cargar de DB
+            session = gameSessionRepository.findBySessionId(sessionId);
             if (session == null) throw new IllegalArgumentException("Partida no encontrada");
 
-            System.out.println("Player1Id: " + session.getPlayerOneId() + ", Player2Id: " + session.getPlayerTwoId() +
-                     ", recieved player: " + playerId);
+            System.out.println("🔍 DB → Player1Id: " + session.getPlayerOneId() + ", Player2Id: " + session.getPlayerTwoId() + ", recibido: " + playerId);
 
-            if (!session.getPlayerOneId().equals(playerId)) throw new IllegalArgumentException("Jugador no autorizado para esta partida");
+            if (!session.getPlayerOneId().equals(playerId))
+                throw new IllegalArgumentException("Jugador no autorizado para esta partida");
 
-            // Parsear tableros
+            // Cargar tableros
             List<List<Integer>> playerBoard;
             List<List<Integer>> botBoard;
             try {
@@ -227,12 +227,13 @@ public class GameServiceBot {
                 throw new RuntimeException("Error deserializando tableros", e);
             }
 
-            // El botType no está en DB, asumimos "simple" por ahora
-            state = new GameState(playerBoard, botBoard, playerId, "BOT", "simple"); //fuuuuuuck que hago y como. Osea el state que es donde yo guardaba, se esta fijando si en null en este caso (entonces ????)
-            // todo: preguntale a @juan si ese comment sigue vigente o si resolvió su duda
-            // Disparos
+            // Crear GameState y cargar disparos
+            // todo: el botType no está en la db. Asumimos simple por ahora
+            state = new GameState(playerBoard, botBoard, playerId, "BOT", "simple");
+
             List<Shot> shots = shotRepository.findAll().stream()
-                    .filter(s -> s.getSessionId().equals(sessionId)).toList();
+                    .filter(s -> s.getSessionId().equals(sessionId))
+                    .toList();
 
             for (Shot shot : shots) {
                 if (shot.isBot()) {
@@ -243,12 +244,20 @@ public class GameServiceBot {
             }
 
             gameStates.put(sessionId, state);
+        } else {
+            // Validar si el jugador es el correcto en memoria
+            System.out.println("🔒 MEMORIA → Player1Id: " + state.getPlayerId() + ", Player2Id: " + state.getPlayerTwoId() + ", recibido: " + playerId);
+            if (!state.getPlayerId().equals(playerId))
+                throw new IllegalArgumentException("Jugador no autorizado para esta partida");
+
+            // Cargar sesión para generar el DTO al final
+            session = gameSessionRepository.findBySessionId(sessionId);
+            if (session == null) throw new IllegalArgumentException("Partida no encontrada");
         }
 
-        GameSession session = gameSessionRepository.findBySessionId(sessionId);
         List<Shot> allShots = shotRepository.findAll().stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
-                .sorted((s1, s2) -> s1.getId().compareTo(s2.getId())) // Ordenar por ID para asegurar orden cronológico
+                .sorted(Comparator.comparing(Shot::getId))
                 .toList();
 
         return GameViewService.toView(session, state, allShots, playerId);
