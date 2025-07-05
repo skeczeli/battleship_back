@@ -34,7 +34,7 @@ public class GameControllerMultiplayer {
     ChatRepository chatRepository;
 
     @PostMapping("/setup/multiplayer")
-    public Map<String, String> CreateGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
+    public Map<String, String> createGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
         System.out.println("Payload recibido: " + setupData);
         System.out.println("matchByLevel recibido: " + setupData.get("matchByLevel"));
         List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
@@ -49,7 +49,7 @@ public class GameControllerMultiplayer {
     }
 
     @PostMapping("/setup/multiplayer/private")
-    public Map<String, String> CreatePrivateGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
+    public Map<String, String> createPrivateGameRoom(@RequestBody Map<String, Object> setupData) throws JsonProcessingException {
         List<List<Integer>> playerBoard = (List<List<Integer>>) setupData.get("board");
         String playerId = (String) setupData.get("playerId");
         String passkey = ((String) setupData.get("passkey"));

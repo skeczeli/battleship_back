@@ -76,7 +76,8 @@ public class GameServiceBot {
             String playerBoardJson = mapper.writeValueAsString(playerBoard);
             String botBoardJson = mapper.writeValueAsString(botBoard);
 
-            GameSession session = new GameSession(sessionId, playerId, "BOT", playerBoardJson, botBoardJson);
+            GameSession session = new GameSession(sessionId, playerId, "BOT",
+                    playerBoardJson, botBoardJson, boardSize);
             System.out.println("GUARDANDO JSON:");
             System.out.println("Player board JSON: " + playerBoardJson); //esto es para ver el tablero de ambos en la consola del back
             System.out.println("Bot board JSON: " + botBoardJson);

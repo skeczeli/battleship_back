@@ -8,5 +8,6 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
     GameSession findBySessionId(String sessionId);
     List<GameSession> findByPlayerOneId(String userId);
     List<GameSession> findByPlayerTwoId(String userId);
+    List<GameSession> findAllByEndedAtIsNull();
 }
 

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -209,7 +210,7 @@ public class UserController {
 
             List<GameSessionDTO> gameHistoryDTOs = userGameSessions.stream()
                     .map(session -> convertToGameSessionDTO(session, username))
-                    .sorted((a, b) -> b.getStartTime().compareTo(a.getStartTime()))
+                    .sorted(Comparator.comparing(GameSessionDTO::getStartTime, Comparator.nullsLast(Comparator.reverseOrder())))
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(gameHistoryDTOs);
@@ -278,6 +279,8 @@ public class UserController {
 
         // Estado del juego
         dto.setStatus(endTime != null ? "Finalizada" : "Activa");
+
+        dto.setBoardSize(session.getBoardSize());
 
         return dto;
     }

@@ -10,18 +10,20 @@ public class GameSessionDTO {
     private String opponent;
     private String result;
     private String status;
+    private Integer boardSize;
 
     // Constructores
     public GameSessionDTO() {}
 
     public GameSessionDTO(String sessionId, LocalDateTime startTime, LocalDateTime endTime,
-                          String opponent, String result, String status) {
+                          String opponent, String result, String status, Integer boardSize) {
         this.sessionId = sessionId;
         this.startTime = startTime;
         this.endTime = endTime;
         this.opponent = opponent;
         this.result = result;
         this.status = status;
+        this.boardSize = boardSize;
     }
 
     // Getters y Setters
@@ -42,4 +44,7 @@ public class GameSessionDTO {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Integer getBoardSize() { return boardSize; }
+    public void setBoardSize(Integer boardSize) { this.boardSize = boardSize; }
 }

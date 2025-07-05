@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import com.example.demo.ranking.RankingService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +43,17 @@ public class GameServiceMultiplayer {
         this.gameSessionRepository = gameSessionRepository;
     }
 
+    @PostConstruct
+    public void clearOrphanedWaitingGames() {
+        List<GameSession> sessions = gameSessionRepository.findAllByEndedAtIsNull();
+        for (GameSession s : sessions) {
+            if (!gameRooms.containsKey(s.getSessionId())) {
+                gameSessionRepository.delete(s);
+                System.out.println("🧹 Deleted orphaned session (no endedAt): " + s.getSessionId());
+            }
+        }
+    }
+
     public GameState getGameState(String sessionId) {
         return gameStates.get(sessionId);
     }
@@ -56,6 +68,8 @@ public class GameServiceMultiplayer {
 
     // Crear una sala de espera
     public String createGameRoom(List<List<Integer>> playerBoard, String playerId, int boardSize, boolean matchByLevel) throws JsonProcessingException {
+        System.out.println(">> gameRooms size: " + gameRooms.size());
+
         String sessionId = UUID.randomUUID().toString();
         
         GameRoom room = new GameRoom();
@@ -82,6 +96,7 @@ public class GameServiceMultiplayer {
         gameSession.setSessionId(sessionId);
         gameSession.setPlayerOneId(playerId);
         gameSession.setPlayerBoardJson(playerBoardJson);
+        gameSession.setBoardSize(boardSize);
 
         gameSessionRepository.save(gameSession);
         
@@ -89,6 +104,8 @@ public class GameServiceMultiplayer {
     }
 
     public String createGameRoom(List<List<Integer>> playerBoard, String playerId, int boardSize, String passkey) throws JsonProcessingException {
+        System.out.println(">> gameRooms size: " + gameRooms.size());
+
         String sessionId = UUID.randomUUID().toString();
 
         GameRoom room = new GameRoom();
@@ -114,6 +131,7 @@ public class GameServiceMultiplayer {
         gameSession.setSessionId(sessionId);
         gameSession.setPlayerOneId(playerId);
         gameSession.setPlayerBoardJson(playerBoardJson);
+        gameSession.setBoardSize(boardSize);
 
         gameSessionRepository.save(gameSession);
 
@@ -180,7 +198,8 @@ public class GameServiceMultiplayer {
             String playerBoardJson = mapper.writeValueAsString(room.getPlayer1Board());
             String EnemyPlayerBoardJson = mapper.writeValueAsString(room.getPlayer2Board());
 
-            GameSession session = new GameSession(room.getSessionId(), room.getPlayer1Id(), room.getPlayer2Id(), playerBoardJson, EnemyPlayerBoardJson);
+            GameSession session = new GameSession(room.getSessionId(), room.getPlayer1Id(), room.getPlayer2Id(),
+                    playerBoardJson, EnemyPlayerBoardJson, room.getBoardSize());
             System.out.println("GUARDANDO JSON:");
             System.out.println("Player board JSON: " + playerBoardJson);
             System.out.println("Enemy board JSON: " + EnemyPlayerBoardJson);
@@ -347,17 +366,41 @@ public class GameServiceMultiplayer {
         int playerLevel = rankingService.getScoreIfExists(playerId)
                 .map(this::getLevelFromScore)
                 .orElse(1);
-        String result = gameRooms.values().stream()
-            .filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER")
-                    && room.getBoardSize() == boardSize
-                    && passkeyMatches(room, null)
-                    && isMatchAllowed(room, matchByLevel, playerLevel))
-            .map(GameRoom::getSessionId)
-            .findFirst()
-            .orElse(null);
+        gameRooms.values().forEach(room ->
+                System.out.println("RoomId: " + room.getSessionId() + ", status: " + room.getStatus() +
+                        ", boardSize: " + room.getBoardSize() + ", passkey: " + room.getPasskey())
+        );
+        var stream = gameRooms.values().stream();
+
+        var filteredByStatus = stream.filter(room -> room.getStatus().equals("WAITING_FOR_PLAYER")).toList();
+        System.out.println("After status: " + filteredByStatus);
+
+        var filteredByBoardSize = filteredByStatus.stream()
+                .filter(room -> room.getBoardSize() == boardSize).toList();
+        System.out.println("After boardSize: " + filteredByBoardSize);
+
+        var filteredByPasskey = filteredByBoardSize.stream()
+                .filter(room -> passkeyMatches(room, null))
+                .toList();
+
+        System.out.println("After passkeyMatches: ");
+        filteredByPasskey.forEach(room -> System.out.println("RoomId: " + room.getSessionId()));
+
+        var filteredByMatchAllowed = filteredByPasskey.stream()
+                .filter(room -> isMatchAllowed(room, matchByLevel, playerLevel))
+                .toList();
+
+        System.out.println("After isMatchAllowed: ");
+        filteredByMatchAllowed.forEach(room -> System.out.println("RoomId: " + room.getSessionId()));
+
+        String sessionId = filteredByMatchAllowed.stream()
+                .map(GameRoom::getSessionId)
+                .findFirst()
+                .orElse(null);
+
         System.out.println("GameRooms: " + gameRooms.values());
-        System.out.println("Result: " + result);
-        return result;
+        System.out.println("Result: " + sessionId);
+        return sessionId;
     }
 
     public String findWaitingGame(int boardSize, String passkey) {

@@ -18,6 +18,7 @@ public class GameSession {
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
     private String winner; // playerOneId, playerTwoId, "bot", null
+    private Integer boardSize;
 
     @Column(columnDefinition = "TEXT")
     private String playerBoardJson;
@@ -28,7 +29,8 @@ public class GameSession {
 
     public GameSession() {}
 
-    public GameSession(String sessionId, String playerOneId, String playerTwoId, String playerBoardJson, String playerTwoBoardJson) {
+    public GameSession(String sessionId, String playerOneId, String playerTwoId,
+                       String playerBoardJson, String playerTwoBoardJson, Integer boardSize) {
         this.sessionId = sessionId;
         this.playerOneId = playerOneId;
         this.playerTwoId = playerTwoId;
@@ -36,6 +38,7 @@ public class GameSession {
         this.playerTwoBoardJson = playerTwoBoardJson;
         this.startedAt = LocalDateTime.now();
         this.winner = null;
+        this.boardSize = boardSize;
     }
 
 
@@ -109,6 +112,14 @@ public class GameSession {
 
     public void setPlayerTwoBoardJson(String playerTwoBoardJson) {
         this.playerTwoBoardJson = playerTwoBoardJson;
+    }
+
+    public Integer getBoardSize() {
+        return boardSize;
+    }
+
+    public void setBoardSize(Integer boardSize) {
+        this.boardSize = boardSize;
     }
 
     @Override
