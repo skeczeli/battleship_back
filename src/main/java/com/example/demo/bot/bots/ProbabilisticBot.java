@@ -21,8 +21,101 @@ public class ProbabilisticBot extends AbstractBot {
 
     @Override
     public List<List<Integer>> generateRandomBoard() {
-        // Igual que el base, pero podrías personalizar para evitar centros o usar simetría
-        return super.generateRandomBoard();
+        List<List<Integer>> board = emptyBoard();
+        int[][] shipsSorted = Arrays.stream(SHIPS)
+            .sorted((a, b) -> Integer.compare(b[1], a[1]))
+            .toArray(int[][]::new);
+
+        if (placeShipBacktrack(board, shipsSorted, 0)) return board;
+        return generateRandomBoard();
+    }
+
+    private boolean placeShipBacktrack(List<List<Integer>> board, int[][] ships, int idx) {
+        if (idx == ships.length) return true;
+        int id = ships[idx][0], size = ships[idx][1];
+        List<Placement> placements = generateShuffledPlacements(size);
+
+        for (Placement p : placements) {
+            if (canPlace(board, p.row, p.col, size, p.horizontal)) {
+                putShip(board, id, p.row, p.col, size, p.horizontal);
+                if (placeShipBacktrack(board, ships, idx + 1)) return true;
+                removeShip(board, p.row, p.col, size, p.horizontal);
+            }
+        }
+        return false;
+    }
+
+    private static class Placement {
+        int row, col; boolean horizontal;
+        Placement(int r, int c, boolean h) { row = r; col = c; horizontal = h; }
+    }
+
+    private List<Placement> generateShuffledPlacements(int size) {
+        List<Placement> list = new ArrayList<>();
+        for (int r = 0; r < BOARD_SIZE; r++) {
+            for (int c = 0; c < BOARD_SIZE; c++) {
+                if (!isCorner(r, c) || Math.random() < 0.3) {
+                    list.add(new Placement(r, c, true));
+                    list.add(new Placement(r, c, false));
+                }
+            }
+        }
+        Collections.shuffle(list);
+        return list;
+    }
+
+    private boolean canPlace(List<List<Integer>> board, int row, int col, int size, boolean horizontal) {
+        if (horizontal && col + size > BOARD_SIZE) return false;
+        if (!horizontal && row + size > BOARD_SIZE) return false;
+
+        for (int i = 0; i < size; i++) {
+            int r = row + (horizontal ? 0 : i);
+            int c = col + (horizontal ? i : 0);
+            if (board.get(r).get(c) != null || hasNeighbor(board, r, c)) return false;
+        }
+        return true;
+    }
+
+    private boolean hasNeighbor(List<List<Integer>> board, int row, int col) {
+        for (int dr = -1; dr <= 1; dr++) {
+            for (int dc = -1; dc <= 1; dc++) {
+                int rr = row + dr, cc = col + dc;
+                if (inbound(rr, cc) && board.get(rr).get(cc) != null) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean inbound(int r, int c) {
+        return r >= 0 && c >= 0 && r < BOARD_SIZE && c < BOARD_SIZE;
+    }
+
+    private boolean isCorner(int r, int c) {
+        return (r == 0 || r == BOARD_SIZE - 1) && (c == 0 || c == BOARD_SIZE - 1);
+    }
+
+    private void putShip(List<List<Integer>> board, int shipId, int row, int col, int size, boolean horizontal) {
+        for (int i = 0; i < size; i++) {
+            int r = row + (horizontal ? 0 : i);
+            int c = col + (horizontal ? i : 0);
+            board.get(r).set(c, shipId);
+        }
+    }
+
+    private void removeShip(List<List<Integer>> board, int row, int col, int size, boolean horizontal) {
+        for (int i = 0; i < size; i++) {
+            int r = row + (horizontal ? 0 : i);
+            int c = col + (horizontal ? i : 0);
+            board.get(r).set(c, null);
+        }
+    }
+
+    private List<List<Integer>> emptyBoard() {
+        List<List<Integer>> board = new ArrayList<>();
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            board.add(new ArrayList<>(Collections.nCopies(BOARD_SIZE, null)));
+        }
+        return board;
     }
 
     @Override
@@ -158,4 +251,4 @@ public class ProbabilisticBot extends AbstractBot {
         currentDirection = null;
         origin = null;
     }
-}
+} 
