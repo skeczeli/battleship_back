@@ -7,6 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DemoApplication {
 
     public static void main(String[] args) {
+        System.out.println("🔍 Trying to read SPRING_DATASOURCE_PASSWORD = " +
+                System.getenv("SPRING_DATASOURCE_PASSWORD"));
         SpringApplication.run(DemoApplication.class, args);
     }
 }
