@@ -280,16 +280,34 @@ public class UserController {
     }
 
     @PostMapping("/api/delete-account")
-    public ResponseEntity<String> deleteAccount(@RequestBody DeleteAccountRequest request) {
-        Optional<User> user = userRepository.findByUsername(
-            request.getUsername()
-        );
+    public ResponseEntity<String> deleteAccount(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody DeleteAccountRequest request
+    ) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Falta token de autenticación");
+        }
+
+        String token = authHeader.replace("Bearer ", "");
+        String usernameFromToken = jwtUtil.validateTokenAndGetUsername(token);
+
+        if (usernameFromToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+        }
+
+        // Protección: el usuario autenticado solo puede eliminar su propia cuenta
+        if (!usernameFromToken.equals(request.getUsername())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No podés eliminar cuentas ajenas");
+        }
+
+        Optional<User> user = userRepository.findByUsername(usernameFromToken);
 
         if (user.isPresent() && user.get().getPassword().equals(request.getPassword())) {
             userRepository.delete(user.get());
             return ResponseEntity.ok("Cuenta eliminada correctamente");
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario o contraseña incorrectos");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta");
         }
     }
+
 }
