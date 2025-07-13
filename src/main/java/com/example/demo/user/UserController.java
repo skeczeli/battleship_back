@@ -58,6 +58,10 @@ public class UserController {
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            if (user.getPassword().equals("GOOGLE_LOGIN_ONLY")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Este usuario solo puede iniciar sesión con Google.");
+            }
             if (user.getPassword().equals(credentials.getPassword())) {
                 String token = jwtUtil.generateToken(user.getUsername());
                 // armar userDTO para devolver
@@ -75,7 +79,7 @@ public class UserController {
             }
         }
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Este usuario fue eliminado y no puede volver a iniciar sesión.");
     }
 
     @PostMapping(path="/add")
@@ -129,6 +133,14 @@ public class UserController {
         }
 
         User user = userOpt.get();
+
+        // 🔒 Si la cuenta es de Google, no permitir cambios de email ni contraseña
+        if ("GOOGLE_LOGIN_ONLY".equals(user.getPassword())) {
+            if (updatedData.getEmail() != null || updatedData.getPassword() != null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No se puede modificar el email o la contraseña de una cuenta vinculada con Google.");
+            }
+        }
 
         // Protección extra: ignoramos cualquier username en el body y usamos solo el del token
         if (updatedData.getName() != null) user.setName(updatedData.getName());
@@ -317,32 +329,63 @@ public class UserController {
                 String email = (String) payload.get("email");
                 String name = (String) payload.get("name");
 
-                Optional<User> existing = userRepository.findByEmail(email);
+                Optional<User> userByEmail = userRepository.findByEmail(email);
                 User user;
+                String baseUsername = email.split("@")[0];
+                String finalUsername = baseUsername;
+                int counter = 1;
 
-                if (existing.isPresent()) {
-                    user = existing.get();
+                // Si el email ya existe, verificamos si es una cuenta Google
+                if (userByEmail.isPresent()) {
+                    User existing = userByEmail.get();
 
-                    // Verificar si está en la blacklist por username
-                    if (deletedUsernameRepository.existsByUsername(user.getUsername())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body("Este usuario fue eliminado y no puede volver a iniciar sesión.");
+                    // Si es cuenta Google, usarla
+                    if ("GOOGLE_LOGIN_ONLY".equals(existing.getPassword())) {
+                        if (deletedUsernameRepository.existsByUsername(existing.getUsername())) {
+                            // El usuario fue eliminado → crear uno nuevo con mismo mail y username alternativo
+                            while (userRepository.findByUsername(finalUsername).isPresent() ||
+                                    deletedUsernameRepository.existsByUsername(finalUsername)) {
+                                finalUsername = baseUsername + counter;
+                                counter++;
+                            }
+
+                            user = new User();
+                            user.setEmail(email);
+                            user.setName(name);
+                            user.setUsername(finalUsername);
+                            user.setPassword("GOOGLE_LOGIN_ONLY");
+                            userRepository.save(user);
+                        } else {
+                            user = existing;
+                        }
+                    } else {
+                        // El mail ya está registrado con una cuenta tradicional → crear una nueva cuenta Google con otro username
+                        while (userRepository.findByUsername(finalUsername).isPresent() ||
+                            deletedUsernameRepository.existsByUsername(finalUsername)) {
+                            finalUsername = baseUsername + counter;
+                            counter++;
+                        }
+
+                        user = new User();
+                        user.setEmail(email);
+                        user.setName(name);
+                        user.setUsername(finalUsername);
+                        user.setPassword("GOOGLE_LOGIN_ONLY");
+                        userRepository.save(user);
                     }
-
                 } else {
-                    String username = email.split("@")[0];
-
-                    // Verificar si ese username está en la blacklist ANTES de crear el usuario
-                    if (deletedUsernameRepository.existsByUsername(username)) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body("Este usuario fue eliminado y no puede volver a registrarse.");
+                    // No existe nadie con ese mail → crear cuenta normalmente
+                    while (userRepository.findByUsername(finalUsername).isPresent() ||
+                        deletedUsernameRepository.existsByUsername(finalUsername)) {
+                        finalUsername = baseUsername + counter;
+                        counter++;
                     }
 
                     user = new User();
                     user.setEmail(email);
                     user.setName(name);
-                    user.setUsername(username);
-                    user.setPassword(""); // opcional
+                    user.setUsername(finalUsername);
+                    user.setPassword("GOOGLE_LOGIN_ONLY");
                     userRepository.save(user);
                 }
 
@@ -352,7 +395,7 @@ public class UserController {
                 UserDTO dto = new UserDTO(
                     user.getUsername(),
                     user.getName(),
-                    null,
+                    user.getPassword(),
                     user.getEmail(),
                     user.getWins(),
                     user.getLosses()
