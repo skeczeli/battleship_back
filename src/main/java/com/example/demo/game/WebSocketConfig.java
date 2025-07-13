@@ -20,7 +20,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:3000", "https://battleship-frontend.onrender.com")
+                .setAllowedOrigins("http://localhost:3000", "https://battleship-front-57bd.onrender.com")
                 .withSockJS();
     }
 }
