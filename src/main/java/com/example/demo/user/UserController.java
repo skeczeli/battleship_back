@@ -56,15 +56,26 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody UserDTO credentials) {
         Optional<User> userOpt = userRepository.findByUsername(credentials.getUsername());
 
+        // Verificar si el usuario está en la blacklist de eliminados
+        if (deletedUsernameRepository.existsByUsername(credentials.getUsername())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body("Esta cuenta fue eliminada y no puede volver a iniciar sesión.");
+        }
+
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            
+            // Verificar si es una cuenta de Google únicamente
             if (user.getPassword().equals("GOOGLE_LOGIN_ONLY")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Este usuario solo puede iniciar sesión con Google.");
             }
+            
+            // Verificar contraseña
             if (user.getPassword().equals(credentials.getPassword())) {
                 String token = jwtUtil.generateToken(user.getUsername());
-                // armar userDTO para devolver
+                
+                // Armar userDTO para devolver
                 UserDTO dto = new UserDTO(
                         user.getUsername(),
                         user.getName(),
@@ -73,13 +84,20 @@ public class UserController {
                         user.getWins(),
                         user.getLosses()
                 );
+                
                 return ResponseEntity.ok()
                         .header("Authorization", "Bearer " + token)
                         .body(dto);
+            } else {
+                // Usuario existe pero contraseña incorrecta
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Contraseña incorrecta. Intenta nuevamente.");
             }
         }
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Este usuario fue eliminado y no puede volver a iniciar sesión.");
+        // Usuario no existe en la base de datos
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body("Cuenta no encontrada.");
     }
 
     @PostMapping(path="/add")
