@@ -134,11 +134,17 @@ public class UserController {
 
         User user = userOpt.get();
 
-        // 🔒 Si la cuenta es de Google, no permitir cambios de email ni contraseña
+        // 🔒 Si la cuenta es de Google
         if ("GOOGLE_LOGIN_ONLY".equals(user.getPassword())) {
-            if (updatedData.getEmail() != null || updatedData.getPassword() != null) {
+            // Solo permitimos cambiar el nombre o volver a setear el mismo email
+            if (updatedData.getPassword() != null) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("No se puede modificar el email o la contraseña de una cuenta vinculada con Google.");
+                    .body("No se puede modificar la contraseña de una cuenta vinculada con Google.");
+            }
+
+            if (updatedData.getEmail() != null && !updatedData.getEmail().equals(user.getEmail())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No se puede modificar el email de una cuenta vinculada con Google.");
             }
         }
 
