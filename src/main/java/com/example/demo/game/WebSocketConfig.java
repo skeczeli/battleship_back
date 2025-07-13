@@ -13,14 +13,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic"); 
+        config.enableSimpleBroker("/topic");
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:3000", "https://battleship-front-57bd.onrender.com")
-                .withSockJS();
+                .setAllowedOriginPatterns("*") // Temporalmente para debug
+                .setAllowedOrigins(
+                        "https://battleship-front-57bd.onrender.com",
+                        "http://localhost:3000"
+                )
+                .withSockJS()
+                .setSuppressCors(false); // Importante para SockJS
     }
 }
