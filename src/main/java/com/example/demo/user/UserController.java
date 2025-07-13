@@ -317,19 +317,35 @@ public class UserController {
                 String email = (String) payload.get("email");
                 String name = (String) payload.get("name");
 
-                // Buscar o crear el usuario
                 Optional<User> existing = userRepository.findByEmail(email);
                 User user;
+
                 if (existing.isPresent()) {
                     user = existing.get();
+
+                    // Verificar si está en la blacklist por username
+                    if (deletedUsernameRepository.existsByUsername(user.getUsername())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("Este usuario fue eliminado y no puede volver a iniciar sesión.");
+                    }
+
                 } else {
+                    String username = email.split("@")[0];
+
+                    // Verificar si ese username está en la blacklist ANTES de crear el usuario
+                    if (deletedUsernameRepository.existsByUsername(username)) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body("Este usuario fue eliminado y no puede volver a registrarse.");
+                    }
+
                     user = new User();
                     user.setEmail(email);
                     user.setName(name);
-                    user.setUsername(email.split("@")[0]); // o algo mejor si querés asegurar unicidad
-                    user.setPassword(""); // opcional, ya que no la usa
+                    user.setUsername(username);
+                    user.setPassword(""); // opcional
                     userRepository.save(user);
                 }
+
 
                 // Crear token y DTO
                 String token = jwtUtil.generateToken(user.getUsername());
