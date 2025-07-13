@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.LocalDateTime;
@@ -42,7 +41,6 @@ public class UserController {
     private FollowRepository followRepository;
 
     @PostMapping("/login")
-    @CrossOrigin(origins = "http://localhost:3000", exposedHeaders = "Authorization")
     public ResponseEntity<?> login(@RequestBody UserDTO credentials) {
         Optional<User> userOpt = userRepository.findByUsername(credentials.getUsername());
 
@@ -68,7 +66,6 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping(path="/add")
     public ResponseEntity<?> addNewUser(@RequestBody UserDTO body) {
         try {
@@ -93,7 +90,6 @@ public class UserController {
     }
 
     @PutMapping("/api/users/update")
-    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<?> updateUser(
             @RequestHeader("Authorization") String authHeader,
             @RequestBody UserDTO updatedData
@@ -141,7 +137,6 @@ public class UserController {
         return userRepository.findAll();
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/api/users/{username}")
     public ResponseEntity<?> getUserByUsername(
             @PathVariable String username,
@@ -191,7 +186,6 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/api/users/{username}/games")
     public ResponseEntity<?> getUserGameHistory(
             @PathVariable String username,
@@ -285,7 +279,6 @@ public class UserController {
         return dto;
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api/delete-account")
     public ResponseEntity<String> deleteAccount(@RequestBody DeleteAccountRequest request) {
         Optional<User> user = userRepository.findByUsername(
